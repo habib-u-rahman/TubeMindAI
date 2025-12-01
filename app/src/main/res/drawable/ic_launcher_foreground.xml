@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Document/Notes Paper -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M24,20 L84,20 L84,70 L24,70 Z" />
+    
+    <!-- Document Folded Corner -->
+    <path
+        android:fillColor="#0F0F0F"
+        android:pathData="M24,20 L36,20 L24,32 Z" />
+    
+    <!-- Highlight on Fold -->
+    <path
+        android:fillColor="#7C3AED"
+        android:fillAlpha="0.3"
+        android:pathData="M24,20 L34,20 L24,30 Z" />
+    
+    <!-- Notes Lines -->
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.9"
+        android:pathData="M30,32 L78,32 L78,35 L30,35 Z" />
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.7"
+        android:pathData="M30,40 L75,40 L75,42.5 L30,42.5 Z" />
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.6"
+        android:pathData="M30,48 L72,48 L72,50 L30,50 Z" />
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.5"
+        android:pathData="M30,56 L69,56 L69,58 L30,58 Z" />
+    
+    <!-- YouTube Play Button -->
+    <path
+        android:fillColor="#00D4FF"
+        android:pathData="M38,42 L38,58 L50,50 Z" />
+    
+    <!-- AI Neural Network Nodes -->
+    <path
+        android:fillColor="#7C3AED"
+        android:pathData="M70,28m-3,0a3,3 0 1,1 6,0a3,3 0 1,1 -6,0" />
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M82,32m-2.5,0a2.5,2.5 0 1,1 5,0a2.5,2.5 0 1,1 -5,0" />
+    <path
+        android:fillColor="#00D4FF"
+        android:pathData="M78,40m-2.5,0a2.5,2.5 0 1,1 5,0a2.5,2.5 0 1,1 -5,0" />
+    
+    <!-- Neural Network Connections -->
+    <path
+        android:fillColor="#7C3AED"
+        android:fillAlpha="0.5"
+        android:pathData="M70,28 L82,32" />
+    <path
+        android:fillColor="#F59E0B"
+        android:fillAlpha="0.5"
+        android:pathData="M82,32 L78,40" />
+    
+    <!-- Bottom Accent Line -->
+    <path
+        android:fillColor="#00D4FF"
+        android:pathData="M20,76 L88,76 L88,79 L20,79 Z" />
+    
+    <!-- Corner Decorative Element -->
+    <path
+        android:fillColor="#7C3AED"
+        android:fillAlpha="0.7"
+        android:pathData="M16,16 L28,16 L28,28 L16,28 Z" />
+    
+    <!-- Inner Corner Highlight -->
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.4"
+        android:pathData="M18,18 L26,18 L26,26 L18,26 Z" />
+</vector>

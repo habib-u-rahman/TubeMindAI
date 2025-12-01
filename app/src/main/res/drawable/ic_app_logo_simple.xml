@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Background Circle -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M100,0C44.8,0 0,44.8 0,100s44.8,100 100,100s100,-44.8 100,-100S155.2,0 100,0z" />
+    
+    <!-- Gradient Overlay -->
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.15"
+        android:pathData="M100,0C44.8,0 0,44.8 0,100s44.8,100 100,100s100,-44.8 100,-100S155.2,0 100,0z" />
+    
+    <!-- Main Document/Notes Shape -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M50,35 L150,35 L150,125 L50,125 Z" />
+    
+    <!-- Document Fold Corner -->
+    <path
+        android:fillColor="#0F0F0F"
+        android:pathData="M50,35 L65,35 L50,50 Z" />
+    
+    <!-- Notes Lines - Using filled rectangles instead of strokes -->
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.8"
+        android:pathData="M65,53 L135,53 L135,57 L65,57 Z" />
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.6"
+        android:pathData="M65,68 L125,68 L125,70.5 L65,70.5 Z" />
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.5"
+        android:pathData="M65,83 L115,83 L115,85 L65,85 Z" />
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.4"
+        android:pathData="M65,98 L105,98 L105,100 L65,100 Z" />
+    
+    <!-- YouTube Play Button -->
+    <path
+        android:fillColor="#00D4FF"
+        android:pathData="M80,70 L80,95 L100,82.5 Z" />
+    
+    <!-- AI Brain/Neural Network Dots - Using paths for circles -->
+    <path
+        android:fillColor="#7C3AED"
+        android:pathData="M130,50m-4,0a4,4 0 1,1 8,0a4,4 0 1,1 -8,0" />
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M145,60m-3,0a3,3 0 1,1 6,0a3,3 0 1,1 -6,0" />
+    <path
+        android:fillColor="#00D4FF"
+        android:pathData="M140,75m-3.5,0a3.5,3.5 0 1,1 7,0a3.5,3.5 0 1,1 -7,0" />
+    
+    <!-- Connecting Lines (Neural Network) -->
+    <path
+        android:fillColor="#7C3AED"
+        android:fillAlpha="0.4"
+        android:pathData="M130,50 L145,60" />
+    <path
+        android:fillColor="#F59E0B"
+        android:fillAlpha="0.4"
+        android:pathData="M145,60 L140,75" />
+    
+    <!-- Bottom Accent Bar -->
+    <path
+        android:fillColor="#00D4FF"
+        android:pathData="M45,133 L155,133 L155,137 L45,137 Z" />
+    
+    <!-- Corner Highlight -->
+    <path
+        android:fillColor="#7C3AED"
+        android:fillAlpha="0.6"
+        android:pathData="M35,35 L50,35 L50,50 L35,50 Z" />
+</vector>

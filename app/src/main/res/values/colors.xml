@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- Dark Attractive Theme - Black Base with Vibrant Accents -->
+    <color name="primary">#00D4FF</color>
+    <color name="primary_dark">#0099CC</color>
+    <color name="primary_light">#33DDFF</color>
+    <color name="secondary">#7C3AED</color>
+    <color name="accent">#F59E0B</color>
+    <color name="accent_light">#FBBF24</color>
+    
+    <!-- Background Colors - Deep Black Theme -->
+    <color name="background_light">#0A0A0A</color>
+    <color name="background_dark">#000000</color>
+    <color name="surface_light">#1A1A1A</color>
+    <color name="surface_dark">#0D0D0D</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary_light">#FFFFFF</color>
+    <color name="text_primary_dark">#FFFFFF</color>
+    <color name="text_secondary_light">#B0B0B0</color>
+    <color name="text_secondary_dark">#808080</color>
+    
+    <!-- Card Colors -->
+    <color name="card_background_light">#1A1A1A</color>
+    <color name="card_background_dark">#0F0F0F</color>
+    
+    <!-- Border Colors -->
+    <color name="border_light">#333333</color>
+    <color name="border_dark">#262626</color>
+    
+    <!-- Gradient Colors - Dark with Cyan/Purple/Amber -->
+    <color name="gradient_start">#000000</color>
+    <color name="gradient_mid">#1A0A2E</color>
+    <color name="gradient_end">#16213E</color>
+</resources>

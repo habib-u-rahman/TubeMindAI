@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Background Circle with Gradient Effect -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M100,0C44.8,0 0,44.8 0,100s44.8,100 100,100s100,-44.8 100,-100S155.2,0 100,0z" />
+    
+    <!-- Outer Glow Circle -->
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.2"
+        android:pathData="M100,0C44.8,0 0,44.8 0,100s44.8,100 100,100s100,-44.8 100,-100S155.2,0 100,0z" />
+    
+    <!-- Notes/Document Background -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M60,40 L140,40 L140,120 L60,120 Z" />
+    
+    <!-- Notes Lines -->
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.6"
+        android:pathData="M70,60 L130,60" />
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.4"
+        android:pathData="M70,75 L120,75" />
+    <path
+        android:fillColor="#00D4FF"
+        android:fillAlpha="0.4"
+        android:pathData="M70,90 L110,90" />
+    
+    <!-- Play Button Triangle (YouTube Style) -->
+    <path
+        android:fillColor="#00D4FF"
+        android:pathData="M85,80 L85,100 L105,90 Z" />
+    
+    <!-- AI Sparkle/Star Effect -->
+    <path
+        android:fillColor="#7C3AED"
+        android:pathData="M150,50 L152,56 L158,56 L153,60 L155,66 L150,62 L145,66 L147,60 L142,56 L148,56 Z" />
+    
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M50,50 L51,53 L54,53 L52,55 L53,58 L50,56 L47,58 L48,55 L46,53 L49,53 Z" />
+    
+    <!-- Bottom Accent Line -->
+    <path
+        android:fillColor="#00D4FF"
+        android:pathData="M50,140 L150,140" />
+    
+    <!-- Corner Decoration -->
+    <path
+        android:fillColor="#7C3AED"
+        android:fillAlpha="0.5"
+        android:pathData="M40,40 L50,40 L50,50 L40,50 Z" />
+</vector>
+
