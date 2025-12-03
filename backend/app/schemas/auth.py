@@ -5,9 +5,18 @@ from datetime import datetime
 
 # Registration Schemas
 class UserRegister(BaseModel):
-    name: str = Field(..., min_length=2, max_length=100)
-    email: EmailStr
-    password: str = Field(..., min_length=6)
+    name: str = Field(..., min_length=2, max_length=100, description="User's full name", examples=["John Doe"])
+    email: EmailStr = Field(..., description="User email address", examples=["john@example.com"])
+    password: str = Field(..., min_length=6, description="User password (minimum 6 characters)", examples=["password123"])
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "John Doe",
+                "email": "john@example.com",
+                "password": "password123"
+            }
+        }
 
 
 class UserRegisterResponse(BaseModel):
@@ -20,8 +29,19 @@ class UserRegisterResponse(BaseModel):
 
 # Login Schemas
 class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
+    email: str = Field(..., description="User email address", examples=["user@example.com"])
+    password: str = Field(..., min_length=1, description="User password", examples=["password123"])
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "password": "password123"
+            }
+        }
+        
+        # Make validation more lenient
+        str_strip_whitespace = True
 
 
 class Token(BaseModel):
@@ -39,9 +59,18 @@ class OTPRequest(BaseModel):
 
 
 class OTPVerify(BaseModel):
-    email: EmailStr
-    otp_code: str = Field(..., min_length=4, max_length=6)
-    purpose: str = Field(..., pattern="^(signup|forgot_password)$")
+    email: EmailStr = Field(..., description="User email address", examples=["user@example.com"])
+    otp_code: str = Field(..., min_length=4, max_length=6, description="OTP code (4-6 digits)", examples=["123456"])
+    purpose: str = Field(..., pattern="^(signup|forgot_password)$", description="OTP purpose: 'signup' or 'forgot_password'", examples=["signup"])
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "otp_code": "123456",
+                "purpose": "signup"
+            }
+        }
 
 
 class OTPVerifyResponse(BaseModel):
@@ -60,6 +89,17 @@ class ResetPassword(BaseModel):
     email: EmailStr
     new_password: str = Field(..., min_length=6)
     confirm_password: str = Field(..., min_length=6)
+    reset_token: Optional[str] = Field(None, description="Reset token from verify-otp endpoint (can also be sent in X-Reset-Token header)")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "new_password": "newpassword123",
+                "confirm_password": "newpassword123",
+                "reset_token": "your_reset_token_here"
+            }
+        }
 
 
 class ResetPasswordResponse(BaseModel):

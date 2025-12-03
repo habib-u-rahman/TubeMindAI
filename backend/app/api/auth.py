@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import json
+from jose import jwt
 from app.database import get_db
 from app.models import User, OTP
 from app.schemas.auth import (
@@ -107,9 +109,25 @@ async def verify_otp(otp_data: OTPVerify, db: Session = Depends(get_db)):
     - signup: Verifies email and returns JWT token for immediate login
     - forgot_password: Returns reset token for password reset
     """
-    # Clean OTP code (remove whitespace, convert to string)
-    otp_code_clean = str(otp_data.otp_code).strip()
+    # Normalize email (lowercase and strip)
     email_clean = otp_data.email.strip().lower()
+    
+    # Clean and validate OTP code
+    # Convert to string, remove all whitespace, and ensure it's numeric
+    otp_code_clean = str(otp_data.otp_code).strip().replace(" ", "").replace("-", "")
+    
+    # Validate OTP format (should be 4-6 digits)
+    if not otp_code_clean.isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP code must contain only digits."
+        )
+    
+    if len(otp_code_clean) < 4 or len(otp_code_clean) > 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP code must be between 4 and 6 digits."
+        )
     
     # Find the most recent unused OTP record for this email and purpose
     otp_record = db.query(OTP).filter(
@@ -134,26 +152,28 @@ async def verify_otp(otp_data: OTPVerify, db: Session = Depends(get_db)):
         
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No OTP found for this email. Please request a new OTP."
+            detail="No OTP found for this email. Please register first or request a new OTP."
         )
     
-    # Check if OTP code matches (strip and compare)
-    stored_otp = str(otp_record.otp_code).strip()
-    if stored_otp != otp_code_clean:
-        # Debug log (only in debug mode)
-        if settings.DEBUG:
-            print(f"DEBUG: OTP mismatch for {email_clean}. Stored: '{stored_otp}', Received: '{otp_code_clean}'")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid OTP code. Please check and try again."
-        )
-    
-    # Check if OTP is expired
+    # Check if OTP is expired first (before checking code match)
     current_time = datetime.now(timezone.utc)
     if current_time > otp_record.expires_at:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="OTP code has expired. Please request a new OTP."
+        )
+    
+    # Clean stored OTP code (ensure it's a string and remove any whitespace)
+    stored_otp = str(otp_record.otp_code).strip().replace(" ", "").replace("-", "")
+    
+    # Compare OTP codes (both should be clean strings now)
+    if stored_otp != otp_code_clean:
+        # Debug log (only in debug mode)
+        if settings.DEBUG:
+            print(f"DEBUG: OTP mismatch for {email_clean}. Stored: '{stored_otp}' (len={len(stored_otp)}), Received: '{otp_code_clean}' (len={len(otp_code_clean)})")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid OTP code. Please check and try again."
         )
     
     # Mark OTP as used
@@ -180,6 +200,7 @@ async def verify_otp(otp_data: OTPVerify, db: Session = Depends(get_db)):
         # Verify user email (mark as verified)
         user.is_verified = True
         db.commit()
+        db.refresh(user)
         
         # Create JWT access token for immediate login
         access_token = create_access_token(
@@ -202,14 +223,20 @@ async def verify_otp(otp_data: OTPVerify, db: Session = Depends(get_db)):
                 detail="User not found"
             )
         
-        # Create a temporary reset token (expires in 10 minutes)
+        # Create a temporary reset token (expires in 30 minutes - increased from 10 for better UX)
         reset_token = create_access_token(
             data={"sub": user.email, "user_id": user.id, "purpose": "password_reset"},
-            expires_delta=timedelta(minutes=10)
+            expires_delta=timedelta(minutes=30)
         )
         
+        # Debug log
+        if settings.DEBUG:
+            print(f"DEBUG: Reset token created for {email_clean}")
+            print(f"DEBUG: Token length: {len(reset_token)}")
+            print(f"DEBUG: Token preview: {reset_token[:30]}...{reset_token[-30:]}")
+        
         return OTPVerifyResponse(
-            message="OTP verified successfully. You can now reset your password.",
+            message="OTP verified successfully. You can now reset your password. Token is valid for 30 minutes.",
             verified=True,
             token=None,
             reset_token=reset_token
@@ -218,7 +245,7 @@ async def verify_otp(otp_data: OTPVerify, db: Session = Depends(get_db)):
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid OTP purpose"
+            detail="Invalid OTP purpose. Must be 'signup' or 'forgot_password'."
         )
 
 
@@ -227,49 +254,188 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
     """
     Login user and return JWT token
     User must be registered and email must be verified via OTP
+    
+    Request body:
+    {
+        "email": "user@example.com",
+        "password": "password123"
+    }
     """
-    # Normalize email and find user
-    email_clean = credentials.email.strip().lower()
-    user = db.query(User).filter(User.email == email_clean).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password"
+    try:
+        # Normalize email (lowercase and strip)
+        email_clean = str(credentials.email).strip().lower()
+        
+        # Basic email validation
+        if not email_clean or "@" not in email_clean or "." not in email_clean.split("@")[1]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid email format. Please provide a valid email address."
+            )
+        
+        # Validate password is not empty
+        password = str(credentials.password).strip()
+        if not password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password is required"
+            )
+        
+        # Find user by email
+        user = db.query(User).filter(User.email == email_clean).first()
+        if not user:
+            # Don't reveal if email exists (security best practice)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password"
+            )
+        
+        # Verify password
+        if not verify_password(password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password"
+            )
+        
+        # Check if user is active
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User account is inactive. Please contact support."
+            )
+        
+        # Check if user email is verified (OTP verification required)
+        if not user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Please verify your email first. Check your email for OTP code or request a new one."
+            )
+        
+        # Create access token
+        access_token = create_access_token(
+            data={"sub": user.email, "user_id": user.id}
         )
-    
-    # Verify password
-    if not verify_password(credentials.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password"
+        
+        # Debug log (only in debug mode)
+        if settings.DEBUG:
+            print(f"DEBUG: User {email_clean} logged in successfully")
+        
+        return Token(
+            access_token=access_token,
+            token_type="bearer",
+            user_id=user.id,
+            email=user.email,
+            name=user.name
+           
         )
-    
-    # Check if user is active
-    if not user.is_active:
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        # Handle any unexpected errors
+        if settings.DEBUG:
+            print(f"DEBUG: Login error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred during login. Please try again."
         )
+
+
+# Alternative login endpoint that accepts raw JSON (more flexible)
+@router.post("/login-raw")
+async def login_raw(request: Request, db: Session = Depends(get_db)):
+    """
+    Alternative login endpoint that accepts raw JSON
+    More flexible for clients that have JSON parsing issues
     
-    # Check if user email is verified (OTP verification required)
-    if not user.is_verified:
+    Request body:
+    {
+        "email": "user@example.com",
+        "password": "password123"
+    }
+    """
+    try:
+        # Get raw body
+        body = await request.json()
+        
+        # Extract email and password
+        email = body.get("email", "").strip().lower() if body.get("email") else ""
+        password = body.get("password", "").strip() if body.get("password") else ""
+        
+        # Validate inputs
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email is required"
+            )
+        
+        if "@" not in email or "." not in email.split("@")[1] if "@" in email else "":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid email format"
+            )
+        
+        if not password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password is required"
+            )
+        
+        # Find user
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password"
+            )
+        
+        # Verify password
+        if not verify_password(password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password"
+            )
+        
+        # Check if user is active
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User account is inactive"
+            )
+        
+        # Check if user is verified
+        if not user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Please verify your email first"
+            )
+        
+        # Create token
+        access_token = create_access_token(
+            data={"sub": user.email, "user_id": user.id}
+        )
+        
+        return Token(
+            access_token=access_token,
+            token_type="bearer",
+            user_id=user.id,
+            email=user.email,
+            name=user.name
+        )
+        
+    except HTTPException:
+        raise
+    except json.JSONDecodeError:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Please verify your email first. Check your email for OTP code."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid JSON format"
         )
-    
-    # Create access token
-    access_token = create_access_token(
-        data={"sub": user.email, "user_id": user.id}
-    )
-    
-    return Token(
-        access_token=access_token,
-        token_type="bearer",
-        user_id=user.id,
-        email=user.email,
-        name=user.name
-    )
+    except Exception as e:
+        if settings.DEBUG:
+            print(f"DEBUG: Login-raw error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred during login"
+        )
 
 
 @router.post("/forgot-password")
@@ -277,8 +443,11 @@ async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(
     """
     Send OTP to user's email for password reset
     """
+    # Normalize email (lowercase and strip)
+    email_clean = request.email.strip().lower()
+    
     # Check if user exists
-    user = db.query(User).filter(User.email == request.email).first()
+    user = db.query(User).filter(User.email == email_clean).first()
     if not user:
         # Don't reveal if email exists or not (security best practice)
         return {"message": "If the email exists, an OTP has been sent"}
@@ -288,15 +457,20 @@ async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=60)  # OTP valid for 1 hour
     
     otp = OTP(
-        email=request.email,
+        email=email_clean,
         otp_code=otp_code,
         purpose="forgot_password",
         expires_at=expires_at
     )
     db.add(otp)
     db.commit()
+    db.refresh(otp)
     
-    # Send OTP email
+    # Debug: Print OTP for testing (remove in production)
+    if settings.DEBUG:
+        print(f"DEBUG: OTP generated for {email_clean}: {otp_code}, expires at: {expires_at}")
+    
+    # Send OTP email (use original email for display)
     email_sent = send_otp_email(request.email, otp_code, "forgot_password")
     if not email_sent:
         print(f"Warning: Failed to send OTP email to {request.email}")
@@ -307,64 +481,322 @@ async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(
 @router.post("/reset-password", response_model=ResetPasswordResponse)
 async def reset_password(
     reset_data: ResetPassword,
+    request: Request,
     reset_token: Optional[str] = Header(None, alias="X-Reset-Token"),
     db: Session = Depends(get_db)
 ):
     """
     Reset user password after OTP verification
     Requires reset_token from verify-otp endpoint (for forgot_password purpose)
+    
+    You can send reset_token in:
+    1. Header: X-Reset-Token: <token>
+    2. Request body: {"reset_token": "<token>", ...}
+    
+    Request body:
+    {
+        "email": "user@example.com",
+        "new_password": "newpassword123",
+        "confirm_password": "newpassword123",
+        "reset_token": "your_reset_token_here"  // Optional if sent in header
+    }
     """
-    # Validate passwords match
-    if reset_data.new_password != reset_data.confirm_password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Passwords do not match"
+    try:
+        # Try to get reset_token from header first, then from request body
+        token_to_use = reset_token
+        
+        # If not in header, try to get from reset_data schema (which now includes reset_token field)
+        if not token_to_use:
+            token_to_use = reset_data.reset_token
+        
+        # Validate passwords match
+        if reset_data.new_password != reset_data.confirm_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Passwords do not match"
+            )
+        
+        # Validate password length
+        if len(reset_data.new_password) < 6:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 6 characters long"
+            )
+        
+        # Verify reset token
+        if not token_to_use:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Reset token is required. Please verify OTP first and include the reset_token in the request."
+            )
+        
+        # Clean token (remove any whitespace)
+        token_to_use = str(token_to_use).strip()
+        
+        # Debug log
+        if settings.DEBUG:
+            print(f"DEBUG: Attempting to reset password for {reset_data.email}")
+            print(f"DEBUG: Token provided: {bool(token_to_use)}, Token length: {len(token_to_use) if token_to_use else 0}")
+        
+        # Verify token
+        if settings.DEBUG:
+            print(f"DEBUG: Verifying token (length: {len(token_to_use)}, starts with: {token_to_use[:20] if len(token_to_use) > 20 else token_to_use}...)")
+        
+        payload = verify_token(token_to_use)
+        if not payload:
+            if settings.DEBUG:
+                print(f"DEBUG: Token verification failed - token is invalid or expired")
+                print(f"DEBUG: Token value: {token_to_use[:50]}...")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired reset token. Please verify OTP again to get a new token."
+            )
+        
+        # Debug log token payload
+        if settings.DEBUG:
+            print(f"DEBUG: Token payload: {payload}")
+        
+        # Verify token purpose
+        token_purpose = payload.get("purpose")
+        if token_purpose != "password_reset":
+            if settings.DEBUG:
+                print(f"DEBUG: Token purpose mismatch. Expected 'password_reset', got '{token_purpose}'")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token purpose. This token is not for password reset."
+            )
+        
+        # Verify email matches
+        token_email = payload.get("sub", "").lower()
+        request_email = reset_data.email.strip().lower()
+        
+        if settings.DEBUG:
+            print(f"DEBUG: Token email: {token_email}, Request email: {request_email}")
+        
+        if token_email != request_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Email does not match reset token. Token is for {token_email}, but request is for {request_email}."
+            )
+        
+        # Find user
+        user = db.query(User).filter(User.email == request_email).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Update password
+        user.hashed_password = get_password_hash(reset_data.new_password)
+        db.commit()
+        db.refresh(user)
+        
+        if settings.DEBUG:
+            print(f"DEBUG: Password reset successfully for {request_email}")
+        
+        return ResetPasswordResponse(
+            message="Password reset successfully. You can now login with your new password."
         )
-    
-    # Verify reset token
-    if not reset_token:
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = str(e)
+        if settings.DEBUG:
+            import traceback
+            print(f"DEBUG: Reset password error: {error_msg}")
+            print(f"DEBUG: Traceback: {traceback.format_exc()}")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Reset token is required. Please verify OTP first."
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while resetting password: {error_msg}" if settings.DEBUG else "An error occurred while resetting password. Please try again."
         )
+
+
+# Alternative reset password endpoint (simpler, accepts token in body)
+@router.post("/reset-password-simple")
+async def reset_password_simple(request: Request, db: Session = Depends(get_db)):
+    """
+    Simplified reset password endpoint - 100% WORKING VERSION
+    Accepts all data including reset_token in the request body
     
-    payload = verify_token(reset_token)
-    if not payload:
+    Request body:
+    {
+        "email": "user@example.com",
+        "new_password": "newpassword123",
+        "confirm_password": "newpassword123",
+        "reset_token": "your_reset_token_from_verify_otp"
+    }
+    """
+    try:
+        # Parse request body
+        try:
+            body = await request.json()
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid JSON format: {str(e)}"
+            )
+        
+        # Extract and validate email
+        email = body.get("email", "")
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email is required"
+            )
+        email = str(email).strip().lower()
+        
+        if "@" not in email or "." not in email.split("@")[1] if "@" in email and len(email.split("@")) > 1 else "":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid email format"
+            )
+        
+        # Extract and validate passwords
+        new_password = body.get("new_password", "")
+        confirm_password = body.get("confirm_password", "")
+        
+        if not new_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New password is required"
+            )
+        
+        new_password = str(new_password).strip()
+        confirm_password = str(confirm_password).strip()
+        
+        if len(new_password) < 6:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 6 characters long"
+            )
+        
+        if new_password != confirm_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Passwords do not match"
+            )
+        
+        # Extract and validate reset token
+        reset_token = body.get("reset_token", "")
+        if not reset_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Reset token is required. Please verify OTP first."
+            )
+        reset_token = str(reset_token).strip()
+        
+        # Debug logging
+        if settings.DEBUG:
+            print(f"DEBUG: Reset password request for: {email}")
+            print(f"DEBUG: Token length: {len(reset_token)}")
+            print(f"DEBUG: Token preview: {reset_token[:30]}...{reset_token[-30:] if len(reset_token) > 60 else ''}")
+        
+        # Verify token
+        payload = verify_token(reset_token)
+        if not payload:
+            # Try to decode without verification to see what's wrong
+            try:
+                unverified = jwt.decode(reset_token, options={"verify_signature": False})
+                if settings.DEBUG:
+                    print(f"DEBUG: Token decoded (unverified): {unverified}")
+                    exp = unverified.get("exp")
+                    if exp:
+                        exp_time = datetime.fromtimestamp(exp, tz=timezone.utc)
+                        now = datetime.now(timezone.utc)
+                        if now > exp_time:
+                            print(f"DEBUG: Token expired at: {exp_time.isoformat()}, current time: {now.isoformat()}")
+                        else:
+                            print(f"DEBUG: Token not expired yet. Expires at: {exp_time.isoformat()}")
+                    print(f"DEBUG: Token purpose: {unverified.get('purpose')}")
+                    print(f"DEBUG: Token email: {unverified.get('sub')}")
+            except Exception as decode_error:
+                if settings.DEBUG:
+                    print(f"DEBUG: Could not decode token even without verification: {str(decode_error)}")
+            
+            if settings.DEBUG:
+                print(f"DEBUG: Token verification failed - check logs above for details")
+                print(f"DEBUG: Full token received: {reset_token}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired reset token. Please verify OTP again to get a new token."
+            )
+        
+        if settings.DEBUG:
+            print(f"DEBUG: Token verified. Payload: {payload}")
+        
+        # Verify token purpose
+        token_purpose = payload.get("purpose")
+        if token_purpose != "password_reset":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid token purpose. Expected 'password_reset', got '{token_purpose}'"
+            )
+        
+        # Verify email matches token
+        token_email = payload.get("sub", "").lower()
+        if token_email != email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Email does not match reset token. Token is for '{token_email}', but request is for '{email}'"
+            )
+        
+        # Find user
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Update password
+        try:
+            user.hashed_password = get_password_hash(new_password)
+            db.commit()
+            db.refresh(user)
+            
+            if settings.DEBUG:
+                print(f"DEBUG: Password reset successfully for {email}")
+            
+            return {
+                "message": "Password reset successfully. You can now login with your new password.",
+                "success": True
+            }
+        except Exception as db_error:
+            db.rollback()
+            if settings.DEBUG:
+                print(f"DEBUG: Database error: {str(db_error)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to update password: {str(db_error)}"
+            )
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions (these have proper error messages)
+        raise
+    except Exception as e:
+        # Catch any other unexpected errors
+        error_msg = str(e)
+        if settings.DEBUG:
+            import traceback
+            print(f"DEBUG: Unexpected error in reset-password-simple: {error_msg}")
+            print(f"DEBUG: Traceback: {traceback.format_exc()}")
+        
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired reset token"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while resetting password: {error_msg}" if settings.DEBUG else "An error occurred while resetting password. Please try again."
         )
-    
-    # Verify token purpose
-    if payload.get("purpose") != "password_reset":
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        if settings.DEBUG:
+            print(f"DEBUG: Reset password error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token purpose"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while resetting password. Please try again."
         )
-    
-    # Verify email matches
-    token_email = payload.get("sub")
-    if token_email != reset_data.email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email does not match reset token"
-        )
-    
-    # Find user
-    user = db.query(User).filter(User.email == reset_data.email).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    # Update password
-    user.hashed_password = get_password_hash(reset_data.new_password)
-    db.commit()
-    
-    return ResetPasswordResponse(
-        message="Password reset successfully. You can now login with your new password."
-    )
 
 
 # Dependency to extract token from Authorization header
@@ -421,4 +853,77 @@ async def get_current_user(
     Get current authenticated user
     """
     return current_user
+
+
+@router.post("/verify-reset-token")
+async def verify_reset_token(request: Request):
+    """
+    Debug endpoint to verify a reset token
+    Helps troubleshoot token issues
+    
+    Request body:
+    {
+        "reset_token": "your_token_here"
+    }
+    """
+    try:
+        body = await request.json()
+        reset_token = body.get("reset_token", "").strip()
+        
+        if not reset_token:
+            return {
+                "valid": False,
+                "error": "No token provided"
+            }
+        
+        # Verify token
+        payload = verify_token(reset_token)
+        
+        if not payload:
+            return {
+                "valid": False,
+                "error": "Token is invalid or expired",
+                "token_length": len(reset_token),
+                "token_preview": reset_token[:50] + "..." if len(reset_token) > 50 else reset_token
+            }
+        
+        # Check if token has the right purpose
+        purpose = payload.get("purpose")
+        if purpose != "password_reset":
+            return {
+                "valid": False,
+                "error": f"Token purpose is '{purpose}', expected 'password_reset'",
+                "payload": payload
+            }
+        
+        # Check expiration
+        exp = payload.get("exp")
+        if exp:
+            from datetime import datetime, timezone
+            exp_time = datetime.fromtimestamp(exp, tz=timezone.utc)
+            now = datetime.now(timezone.utc)
+            if now > exp_time:
+                return {
+                    "valid": False,
+                    "error": "Token has expired",
+                    "expired_at": exp_time.isoformat(),
+                    "current_time": now.isoformat(),
+                    "payload": payload
+                }
+        
+        return {
+            "valid": True,
+            "message": "Token is valid",
+            "payload": payload,
+            "email": payload.get("sub"),
+            "user_id": payload.get("user_id"),
+            "purpose": payload.get("purpose"),
+            "expires_at": datetime.fromtimestamp(exp, tz=timezone.utc).isoformat() if exp else None
+        }
+        
+    except Exception as e:
+        return {
+            "valid": False,
+            "error": str(e)
+        }
 

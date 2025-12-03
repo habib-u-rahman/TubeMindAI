@@ -127,3 +127,171 @@ print(response.json())
         """
     }
 
+
+@router.post("/test-validation-error")
+async def test_validation_error(request: Request):
+    """
+    Test endpoint to see what validation errors look like
+    Send an invalid request to see the error format
+    """
+    from fastapi import Request as FastAPIRequest
+    from fastapi.exceptions import RequestValidationError
+    from app.schemas.auth import UserLogin
+    
+    try:
+        body = await request.body()
+        body_str = body.decode("utf-8", errors='replace')
+        
+        try:
+            json_data = json.loads(body_str)
+        except json.JSONDecodeError as e:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": "Invalid JSON",
+                    "message": str(e),
+                    "hint": "Your JSON is malformed. Check for syntax errors."
+                }
+            )
+        
+        # Try to validate with Pydantic
+        try:
+            login_data = UserLogin(**json_data)
+            return {
+                "success": True,
+                "message": "Request is valid!",
+                "data": {
+                    "email": login_data.email,
+                    "password": "***"  # Don't return password
+                }
+            }
+        except Exception as e:
+            # This will show what validation errors look like
+            if hasattr(e, 'errors'):
+                return JSONResponse(
+                    status_code=422,
+                    content={
+                        "error": "Validation failed",
+                        "raw_errors": e.errors() if hasattr(e, 'errors') else str(e),
+                        "message": "This is what a validation error looks like",
+                        "received_data": json_data
+                    }
+                )
+            else:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "error": str(e),
+                        "received_data": json_data
+                    }
+                )
+                
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Server error",
+                "message": str(e)
+            }
+        )
+
+
+@router.post("/validate-login")
+async def validate_login(request: Request):
+    """
+    Validate login request format before calling the actual login endpoint
+    Helps debug 422 validation errors
+    """
+    try:
+        body = await request.body()
+        body_str = body.decode("utf-8", errors='replace')
+        
+        try:
+            json_data = json.loads(body_str)
+            
+            # Check required fields
+            required_fields = ["email", "password"]
+            missing_fields = [field for field in required_fields if field not in json_data]
+            
+            errors = []
+            warnings = []
+            
+            if missing_fields:
+                errors.append(f"Missing required fields: {', '.join(missing_fields)}")
+            
+            # Validate email
+            if "email" in json_data:
+                email = json_data["email"]
+                if not isinstance(email, str):
+                    errors.append("Email must be a string")
+                elif "@" not in email or "." not in email:
+                    warnings.append("Email format looks invalid. Should be like: user@example.com")
+            else:
+                errors.append("Email field is required")
+            
+            # Validate password
+            if "password" in json_data:
+                password = json_data["password"]
+                if not isinstance(password, str):
+                    errors.append("Password must be a string")
+                elif len(password) == 0:
+                    errors.append("Password cannot be empty")
+                elif len(password) < 6:
+                    warnings.append("Password should be at least 6 characters long")
+            else:
+                errors.append("Password field is required")
+            
+            # Check for extra fields
+            allowed_fields = ["email", "password"]
+            extra_fields = [field for field in json_data.keys() if field not in allowed_fields]
+            if extra_fields:
+                warnings.append(f"Extra fields found (will be ignored): {', '.join(extra_fields)}")
+            
+            if errors:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "success": False,
+                        "message": "Validation errors found",
+                        "errors": errors,
+                        "warnings": warnings,
+                        "received_data": json_data,
+                        "correct_format": {
+                            "email": "user@example.com",
+                            "password": "password123"
+                        }
+                    }
+                )
+            
+            return {
+                "success": True,
+                "message": "✅ Login request format is valid!",
+                "received_data": json_data,
+                "warnings": warnings if warnings else None,
+                "next_step": "You can now call POST /api/auth/login with this data"
+            }
+            
+        except json.JSONDecodeError as e:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "message": "Invalid JSON format",
+                    "error": str(e),
+                    "hint": "Make sure your JSON is properly formatted",
+                    "correct_format": {
+                        "email": "user@example.com",
+                        "password": "password123"
+                    }
+                }
+            )
+            
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": "Error processing request",
+                "error": str(e)
+            }
+        )

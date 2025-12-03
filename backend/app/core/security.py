@@ -28,7 +28,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     
-    to_encode.update({"exp": expire})
+    # Convert datetime to timestamp for JWT
+    expire_timestamp = int(expire.timestamp())
+    to_encode.update({"exp": expire_timestamp})
+    
+    if settings.DEBUG:
+        print(f"DEBUG: Creating token with expiration: {expire.isoformat()} (timestamp: {expire_timestamp})")
+    
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
@@ -36,9 +42,54 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 def verify_token(token: str) -> Optional[dict]:
     """Verify and decode JWT token"""
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        if not token or not isinstance(token, str):
+            if settings.DEBUG:
+                print(f"DEBUG: Token is empty or not a string")
+            return None
+        
+        # Remove any whitespace and quotes
+        token = token.strip().strip('"').strip("'")
+        
+        if not token:
+            if settings.DEBUG:
+                print(f"DEBUG: Token is empty after stripping")
+            return None
+        
+        if settings.DEBUG:
+            print(f"DEBUG: Verifying token (length: {len(token)})")
+            print(f"DEBUG: Token starts with: {token[:20]}...")
+            print(f"DEBUG: Using SECRET_KEY length: {len(settings.SECRET_KEY)}")
+            print(f"DEBUG: Using algorithm: {settings.ALGORITHM}")
+        
+        # Decode and verify token
+        payload = jwt.decode(
+            token, 
+            settings.SECRET_KEY, 
+            algorithms=[settings.ALGORITHM],
+            options={"verify_signature": True, "verify_exp": True}
+        )
+        
+        if settings.DEBUG:
+            print(f"DEBUG: Token verified successfully!")
+            print(f"DEBUG: Payload: {payload}")
+        
         return payload
-    except JWTError:
+        
+    except JWTError as e:
+        # Catch all JWT errors (expired, invalid signature, etc.)
+        if settings.DEBUG:
+            print(f"DEBUG: JWT Error: {str(e)}")
+            print(f"DEBUG: Error type: {type(e).__name__}")
+            import traceback
+            print(f"DEBUG: Traceback: {traceback.format_exc()}")
+        return None
+    except Exception as e:
+        # Any other error
+        if settings.DEBUG:
+            print(f"DEBUG: Token verification error: {str(e)}")
+            print(f"DEBUG: Error type: {type(e).__name__}")
+            import traceback
+            print(f"DEBUG: Traceback: {traceback.format_exc()}")
         return None
 
 
