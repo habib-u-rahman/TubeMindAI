@@ -108,6 +108,9 @@ async def verify_otp(otp_data: OTPVerify, db: Session = Depends(get_db)):
     Different handling for each purpose:
     - signup: Verifies email and returns JWT token for immediate login
     - forgot_password: Returns reset token for password reset
+    
+    Note: For forgot password, you can also use the dedicated endpoint:
+    POST /api/auth/forgot-password/verify-otp
     """
     # Normalize email (lowercase and strip)
     email_clean = otp_data.email.strip().lower()
@@ -216,27 +219,44 @@ async def verify_otp(otp_data: OTPVerify, db: Session = Depends(get_db)):
     
     # Handle forgot_password OTP verification
     elif otp_data.purpose == "forgot_password":
+        # Find user
         user = db.query(User).filter(User.email == email_clean).first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                detail="User not found. Please check your email address."
             )
         
-        # Create a temporary reset token (expires in 30 minutes - increased from 10 for better UX)
-        reset_token = create_access_token(
-            data={"sub": user.email, "user_id": user.id, "purpose": "password_reset"},
-            expires_delta=timedelta(minutes=30)
-        )
+        # Check if user is active
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User account is inactive. Please contact support."
+            )
+        
+        # Create a temporary reset token (expires in 30 minutes)
+        try:
+            reset_token = create_access_token(
+                data={"sub": user.email, "user_id": user.id, "purpose": "password_reset"},
+                expires_delta=timedelta(minutes=30)
+            )
+        except Exception as token_error:
+            if settings.DEBUG:
+                print(f"DEBUG: Error creating reset token: {str(token_error)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create reset token. Please try again."
+            )
         
         # Debug log
         if settings.DEBUG:
-            print(f"DEBUG: Reset token created for {email_clean}")
-            print(f"DEBUG: Token length: {len(reset_token)}")
+            print(f"DEBUG: Forgot password OTP verified for {email_clean}")
+            print(f"DEBUG: Reset token created - length: {len(reset_token)}")
             print(f"DEBUG: Token preview: {reset_token[:30]}...{reset_token[-30:]}")
+            print(f"DEBUG: Token expires in 30 minutes")
         
         return OTPVerifyResponse(
-            message="OTP verified successfully. You can now reset your password. Token is valid for 30 minutes.",
+            message="OTP verified successfully. You can now reset your password. Use the reset_token in the reset-password endpoint. Token is valid for 30 minutes.",
             verified=True,
             token=None,
             reset_token=reset_token
@@ -247,6 +267,148 @@ async def verify_otp(otp_data: OTPVerify, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid OTP purpose. Must be 'signup' or 'forgot_password'."
         )
+
+
+# Dedicated endpoint for forgot password OTP verification
+@router.post("/forgot-password/verify-otp", response_model=OTPVerifyResponse)
+async def verify_forgot_password_otp(otp_data: OTPVerify, db: Session = Depends(get_db)):
+    """
+    Verify OTP for forgot password flow
+    This is a dedicated endpoint specifically for forgot password OTP verification
+    
+    Request body:
+    {
+        "email": "user@example.com",
+        "otp_code": "123456",
+        "purpose": "forgot_password"
+    }
+    
+    Response:
+    {
+        "message": "OTP verified successfully...",
+        "verified": true,
+        "token": null,
+        "reset_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
+    """
+    # Force purpose to be forgot_password for this endpoint
+    if otp_data.purpose != "forgot_password":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This endpoint is only for forgot_password purpose. Use /api/auth/verify-otp for signup verification."
+        )
+    
+    # Normalize email
+    email_clean = otp_data.email.strip().lower()
+    
+    # Clean and validate OTP code
+    otp_code_clean = str(otp_data.otp_code).strip().replace(" ", "").replace("-", "")
+    
+    # Validate OTP format
+    if not otp_code_clean.isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP code must contain only digits."
+        )
+    
+    if len(otp_code_clean) < 4 or len(otp_code_clean) > 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP code must be between 4 and 6 digits."
+        )
+    
+    # Find the most recent unused OTP record for this email and forgot_password purpose
+    otp_record = db.query(OTP).filter(
+        OTP.email == email_clean,
+        OTP.purpose == "forgot_password",
+        OTP.is_used == False
+    ).order_by(OTP.created_at.desc()).first()
+    
+    if not otp_record:
+        # Check if there's an OTP but it's already used
+        used_otp = db.query(OTP).filter(
+            OTP.email == email_clean,
+            OTP.purpose == "forgot_password",
+            OTP.is_used == True
+        ).order_by(OTP.created_at.desc()).first()
+        
+        if used_otp:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="OTP code has already been used. Please request a new OTP by calling forgot-password again."
+            )
+        
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No OTP found for this email. Please request a new OTP by calling the forgot-password endpoint first."
+        )
+    
+    # Check if OTP is expired
+    current_time = datetime.now(timezone.utc)
+    if current_time > otp_record.expires_at:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP code has expired. Please request a new OTP by calling the forgot-password endpoint again."
+        )
+    
+    # Clean stored OTP code
+    stored_otp = str(otp_record.otp_code).strip().replace(" ", "").replace("-", "")
+    
+    # Compare OTP codes
+    if stored_otp != otp_code_clean:
+        if settings.DEBUG:
+            print(f"DEBUG: OTP mismatch for forgot password {email_clean}. Stored: '{stored_otp}' (len={len(stored_otp)}), Received: '{otp_code_clean}' (len={len(otp_code_clean)})")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid OTP code. Please check and try again."
+        )
+    
+    # Mark OTP as used
+    otp_record.is_used = True
+    db.commit()
+    
+    # Find user
+    user = db.query(User).filter(User.email == email_clean).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found. Please check your email address."
+        )
+    
+    # Check if user is active
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive. Please contact support."
+        )
+    
+    # Create reset token
+    try:
+        reset_token = create_access_token(
+            data={"sub": user.email, "user_id": user.id, "purpose": "password_reset"},
+            expires_delta=timedelta(minutes=30)
+        )
+    except Exception as token_error:
+        if settings.DEBUG:
+            print(f"DEBUG: Error creating reset token: {str(token_error)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create reset token. Please try again."
+        )
+    
+    # Debug log
+    if settings.DEBUG:
+        print(f"DEBUG: Forgot password OTP verified successfully for {email_clean}")
+        print(f"DEBUG: Reset token created - length: {len(reset_token)}")
+        print(f"DEBUG: Token preview: {reset_token[:30]}...{reset_token[-30:]}")
+        print(f"DEBUG: Token expires in 30 minutes")
+    
+    return OTPVerifyResponse(
+        message="OTP verified successfully. You can now reset your password. Use the reset_token in the reset-password endpoint. Token is valid for 30 minutes.",
+        verified=True,
+        token=None,
+        reset_token=reset_token
+    )
 
 
 @router.post("/login", response_model=Token)
@@ -325,7 +487,6 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
             user_id=user.id,
             email=user.email,
             name=user.name
-           
         )
     except HTTPException:
         # Re-raise HTTP exceptions
@@ -340,142 +501,90 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
         )
 
 
-# Alternative login endpoint that accepts raw JSON (more flexible)
-@router.post("/login-raw")
-async def login_raw(request: Request, db: Session = Depends(get_db)):
-    """
-    Alternative login endpoint that accepts raw JSON
-    More flexible for clients that have JSON parsing issues
-    
-    Request body:
-    {
-        "email": "user@example.com",
-        "password": "password123"
-    }
-    """
-    try:
-        # Get raw body
-        body = await request.json()
-        
-        # Extract email and password
-        email = body.get("email", "").strip().lower() if body.get("email") else ""
-        password = body.get("password", "").strip() if body.get("password") else ""
-        
-        # Validate inputs
-        if not email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email is required"
-            )
-        
-        if "@" not in email or "." not in email.split("@")[1] if "@" in email else "":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid email format"
-            )
-        
-        if not password:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password is required"
-            )
-        
-        # Find user
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password"
-            )
-        
-        # Verify password
-        if not verify_password(password, user.hashed_password):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password"
-            )
-        
-        # Check if user is active
-        if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User account is inactive"
-            )
-        
-        # Check if user is verified
-        if not user.is_verified:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Please verify your email first"
-            )
-        
-        # Create token
-        access_token = create_access_token(
-            data={"sub": user.email, "user_id": user.id}
-        )
-        
-        return Token(
-            access_token=access_token,
-            token_type="bearer",
-            user_id=user.id,
-            email=user.email,
-            name=user.name
-        )
-        
-    except HTTPException:
-        raise
-    except json.JSONDecodeError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid JSON format"
-        )
-    except Exception as e:
-        if settings.DEBUG:
-            print(f"DEBUG: Login-raw error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred during login"
-        )
-
-
 @router.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
     """
     Send OTP to user's email for password reset
+    
+    Request body:
+    {
+        "email": "user@example.com"
+    }
+    
+    Response:
+    {
+        "message": "If the email exists, an OTP has been sent to your email"
+    }
     """
-    # Normalize email (lowercase and strip)
-    email_clean = request.email.strip().lower()
-    
-    # Check if user exists
-    user = db.query(User).filter(User.email == email_clean).first()
-    if not user:
-        # Don't reveal if email exists or not (security best practice)
-        return {"message": "If the email exists, an OTP has been sent"}
-    
-    # Generate and save OTP
-    otp_code = generate_otp(6)
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=60)  # OTP valid for 1 hour
-    
-    otp = OTP(
-        email=email_clean,
-        otp_code=otp_code,
-        purpose="forgot_password",
-        expires_at=expires_at
-    )
-    db.add(otp)
-    db.commit()
-    db.refresh(otp)
-    
-    # Debug: Print OTP for testing (remove in production)
-    if settings.DEBUG:
-        print(f"DEBUG: OTP generated for {email_clean}: {otp_code}, expires at: {expires_at}")
-    
-    # Send OTP email (use original email for display)
-    email_sent = send_otp_email(request.email, otp_code, "forgot_password")
-    if not email_sent:
-        print(f"Warning: Failed to send OTP email to {request.email}")
-    
-    return {"message": "If the email exists, an OTP has been sent"}
+    try:
+        # Normalize email (lowercase and strip)
+        email_clean = request.email.strip().lower()
+        
+        # Basic email validation
+        if not email_clean or "@" not in email_clean or "." not in email_clean.split("@")[1] if "@" in email_clean and len(email_clean.split("@")) > 1 else "":
+            # Don't reveal if email format is wrong (security best practice)
+            return {"message": "If the email exists, an OTP has been sent to your email"}
+        
+        # Check if user exists
+        user = db.query(User).filter(User.email == email_clean).first()
+        if not user:
+            # Don't reveal if email exists or not (security best practice)
+            return {"message": "If the email exists, an OTP has been sent to your email"}
+        
+        # Check if user is active
+        if not user.is_active:
+            # Don't reveal account status (security best practice)
+            return {"message": "If the email exists, an OTP has been sent to your email"}
+        
+        # Generate and save OTP
+        otp_code = generate_otp(6)
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=60)  # OTP valid for 1 hour
+        
+        # Create OTP record
+        otp = OTP(
+            email=email_clean,
+            otp_code=otp_code,
+            purpose="forgot_password",
+            expires_at=expires_at
+        )
+        
+        try:
+            db.add(otp)
+            db.commit()
+            db.refresh(otp)
+        except Exception as db_error:
+            db.rollback()
+            if settings.DEBUG:
+                print(f"DEBUG: Database error saving OTP: {str(db_error)}")
+            # Don't reveal error to user (security best practice)
+            return {"message": "If the email exists, an OTP has been sent to your email"}
+        
+        # Debug: Print OTP for testing (only in debug mode)
+        if settings.DEBUG:
+            print(f"DEBUG: Forgot password OTP generated for {email_clean}: {otp_code}")
+            print(f"DEBUG: OTP expires at: {expires_at.isoformat()}")
+            print(f"DEBUG: OTP ID: {otp.id}")
+        
+        # Send OTP email (use original email for display)
+        email_sent = send_otp_email(request.email, otp_code, "forgot_password")
+        if not email_sent:
+            if settings.DEBUG:
+                print(f"WARNING: Failed to send OTP email to {request.email}")
+            # Still return success message (security best practice)
+            # In production, you might want to log this for monitoring
+        
+        return {
+            "message": "If the email exists, an OTP has been sent to your email",
+            "success": True
+        }
+        
+    except Exception as e:
+        if settings.DEBUG:
+            import traceback
+            print(f"DEBUG: Error in forgot-password: {str(e)}")
+            print(f"DEBUG: Traceback: {traceback.format_exc()}")
+        # Don't reveal error details to user (security best practice)
+        return {"message": "If the email exists, an OTP has been sent to your email"}
 
 
 @router.post("/reset-password", response_model=ResetPasswordResponse)
@@ -855,75 +964,4 @@ async def get_current_user(
     return current_user
 
 
-@router.post("/verify-reset-token")
-async def verify_reset_token(request: Request):
-    """
-    Debug endpoint to verify a reset token
-    Helps troubleshoot token issues
-    
-    Request body:
-    {
-        "reset_token": "your_token_here"
-    }
-    """
-    try:
-        body = await request.json()
-        reset_token = body.get("reset_token", "").strip()
-        
-        if not reset_token:
-            return {
-                "valid": False,
-                "error": "No token provided"
-            }
-        
-        # Verify token
-        payload = verify_token(reset_token)
-        
-        if not payload:
-            return {
-                "valid": False,
-                "error": "Token is invalid or expired",
-                "token_length": len(reset_token),
-                "token_preview": reset_token[:50] + "..." if len(reset_token) > 50 else reset_token
-            }
-        
-        # Check if token has the right purpose
-        purpose = payload.get("purpose")
-        if purpose != "password_reset":
-            return {
-                "valid": False,
-                "error": f"Token purpose is '{purpose}', expected 'password_reset'",
-                "payload": payload
-            }
-        
-        # Check expiration
-        exp = payload.get("exp")
-        if exp:
-            from datetime import datetime, timezone
-            exp_time = datetime.fromtimestamp(exp, tz=timezone.utc)
-            now = datetime.now(timezone.utc)
-            if now > exp_time:
-                return {
-                    "valid": False,
-                    "error": "Token has expired",
-                    "expired_at": exp_time.isoformat(),
-                    "current_time": now.isoformat(),
-                    "payload": payload
-                }
-        
-        return {
-            "valid": True,
-            "message": "Token is valid",
-            "payload": payload,
-            "email": payload.get("sub"),
-            "user_id": payload.get("user_id"),
-            "purpose": payload.get("purpose"),
-            "expires_at": datetime.fromtimestamp(exp, tz=timezone.utc).isoformat() if exp else None
-        }
-        
-    except Exception as e:
-        return {
-            "valid": False,
-            "error": str(e)
-        }
 

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
 
@@ -55,13 +55,41 @@ class Token(BaseModel):
 # OTP Schemas
 class OTPRequest(BaseModel):
     email: EmailStr
-    purpose: str = Field(..., pattern="^(signup|forgot_password)$")
+    purpose: str = Field(..., description="OTP purpose: 'signup' or 'forgot_password'")
+    
+    @field_validator('purpose', mode='before')
+    @classmethod
+    def normalize_purpose(cls, v: str) -> str:
+        """Normalize purpose value to handle common typos"""
+        v = str(v).strip().lower()
+        # Handle common typo: "forget_password" -> "forgot_password"
+        if v == "forget_password":
+            return "forgot_password"
+        # Accept valid values
+        if v in ["signup", "forgot_password"]:
+            return v
+        # Raise error for invalid values
+        raise ValueError("Purpose must be either 'signup' or 'forgot_password' (you can also use 'forget_password')")
 
 
 class OTPVerify(BaseModel):
     email: EmailStr = Field(..., description="User email address", examples=["user@example.com"])
     otp_code: str = Field(..., min_length=4, max_length=6, description="OTP code (4-6 digits)", examples=["123456"])
-    purpose: str = Field(..., pattern="^(signup|forgot_password)$", description="OTP purpose: 'signup' or 'forgot_password'", examples=["signup"])
+    purpose: str = Field(..., description="OTP purpose: 'signup' or 'forgot_password' (also accepts 'forget_password')", examples=["signup"])
+    
+    @field_validator('purpose', mode='before')
+    @classmethod
+    def normalize_purpose(cls, v: str) -> str:
+        """Normalize purpose value to handle common typos"""
+        v = str(v).strip().lower()
+        # Handle common typo: "forget_password" -> "forgot_password"
+        if v == "forget_password":
+            return "forgot_password"
+        # Accept valid values
+        if v in ["signup", "forgot_password"]:
+            return v
+        # Raise error for invalid values
+        raise ValueError("Purpose must be either 'signup' or 'forgot_password' (you can also use 'forget_password')")
     
     class Config:
         json_schema_extra = {
