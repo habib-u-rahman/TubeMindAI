@@ -11,7 +11,17 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.example.tubemindai.api.ApiClient;
+import com.example.tubemindai.api.ApiService;
+import com.example.tubemindai.api.models.LoginRequest;
+import com.example.tubemindai.api.models.LoginResponse;
+import com.example.tubemindai.utils.SharedPrefsManager;
 import com.example.tubemindai.utils.ValidationUtils;
+import com.google.gson.Gson;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 /**
  * Login Activity - First screen for user authentication
@@ -80,12 +90,71 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // TODO: Implement actual login logic with backend
-        // For now, just navigate to HomeActivity
-        Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
-        Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
-        startActivity(intent);
-        finish();
+        // Disable button to prevent multiple clicks
+        btnLogin.setEnabled(false);
+        btnLogin.setText("Logging in...");
+
+        // Call login API
+        loginUser(email, password);
+    }
+
+    private void loginUser(String email, String password) {
+        ApiService apiService = ApiClient.getApiService();
+        LoginRequest request = new LoginRequest(email, password);
+
+        Call<LoginResponse> call = apiService.login(request);
+        call.enqueue(new Callback<LoginResponse>() {
+            @Override
+            public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
+                btnLogin.setEnabled(true);
+                btnLogin.setText("Login");
+
+                if (response.isSuccessful() && response.body() != null) {
+                    LoginResponse loginResponse = response.body();
+                    
+                    // Save user data and token
+                    SharedPrefsManager prefsManager = new SharedPrefsManager(LoginActivity.this);
+                    prefsManager.saveAccessToken(loginResponse.getAccessToken());
+                    prefsManager.saveUserInfo(
+                        loginResponse.getUserId(),
+                        loginResponse.getEmail(),
+                        loginResponse.getName()
+                    );
+                    
+                    Toast.makeText(LoginActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
+                    
+                    // Navigate to HomeActivity
+                    Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    // Handle error response
+                    String errorMessage = "Login failed";
+                    try {
+                        if (response.errorBody() != null) {
+                            String errorBody = response.errorBody().string();
+                            Gson gson = new Gson();
+                            com.example.tubemindai.api.models.ApiError error = gson.fromJson(errorBody, com.example.tubemindai.api.models.ApiError.class);
+                            if (error.getMessage() != null) {
+                                errorMessage = error.getMessage();
+                            } else if (error.getDetail() != null) {
+                                errorMessage = error.getDetail();
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<LoginResponse> call, Throwable t) {
+                btnLogin.setEnabled(true);
+                btnLogin.setText("Login");
+                Toast.makeText(LoginActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
     }
 }
 

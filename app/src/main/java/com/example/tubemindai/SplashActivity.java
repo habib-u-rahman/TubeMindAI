@@ -101,9 +101,20 @@ public class SplashActivity extends AppCompatActivity {
             progressAlpha.start();
         }, 1200);
 
-        // Navigate to LoginActivity after splash duration
+        // Navigate to appropriate activity after splash duration
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            Intent intent = new Intent(SplashActivity.this, LoginActivity.class);
+            // Check if user is already logged in
+            com.example.tubemindai.utils.SharedPrefsManager prefsManager = 
+                new com.example.tubemindai.utils.SharedPrefsManager(SplashActivity.this);
+            
+            Intent intent;
+            if (prefsManager.isLoggedIn()) {
+                // User is logged in, go to HomeActivity
+                intent = new Intent(SplashActivity.this, HomeActivity.class);
+            } else {
+                // User is not logged in, go to LoginActivity
+                intent = new Intent(SplashActivity.this, LoginActivity.class);
+            }
             startActivity(intent);
             finish();
         }, SPLASH_DURATION);

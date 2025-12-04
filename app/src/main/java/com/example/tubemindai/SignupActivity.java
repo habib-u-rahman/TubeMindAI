@@ -11,7 +11,16 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.example.tubemindai.api.ApiClient;
+import com.example.tubemindai.api.ApiService;
+import com.example.tubemindai.api.models.RegisterRequest;
+import com.example.tubemindai.api.models.RegisterResponse;
 import com.example.tubemindai.utils.ValidationUtils;
+import com.google.gson.Gson;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 /**
  * Signup Activity - User registration screen
@@ -48,17 +57,6 @@ public class SignupActivity extends AppCompatActivity {
             Intent intent = new Intent(SignupActivity.this, LoginActivity.class);
             startActivity(intent);
             finish();
-        });
-
-        // Navigate to OTP when email is entered
-        etEmail.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                String email = etEmail.getText().toString().trim();
-                if (!TextUtils.isEmpty(email) && ValidationUtils.isValidEmail(email)) {
-                    // Navigate to OTP verification
-                    navigateToOtp(email);
-                }
-            }
         });
     }
 
@@ -99,8 +97,59 @@ public class SignupActivity extends AppCompatActivity {
             return;
         }
 
-        // Navigate to OTP verification
-        navigateToOtp(email);
+        // Disable button to prevent multiple clicks
+        btnSignup.setEnabled(false);
+        btnSignup.setText("Registering...");
+
+        // Call register API
+        registerUser(name, email, password);
+    }
+
+    private void registerUser(String name, String email, String password) {
+        ApiService apiService = ApiClient.getApiService();
+        RegisterRequest request = new RegisterRequest(name, email, password);
+
+        Call<RegisterResponse> call = apiService.register(request);
+        call.enqueue(new Callback<RegisterResponse>() {
+            @Override
+            public void onResponse(Call<RegisterResponse> call, Response<RegisterResponse> response) {
+                btnSignup.setEnabled(true);
+                btnSignup.setText("Create Account");
+
+                if (response.isSuccessful() && response.body() != null) {
+                    RegisterResponse registerResponse = response.body();
+                    Toast.makeText(SignupActivity.this, registerResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    
+                    // Navigate to OTP verification
+                    navigateToOtp(email);
+                } else {
+                    // Handle error response
+                    String errorMessage = "Registration failed";
+                    try {
+                        if (response.errorBody() != null) {
+                            String errorBody = response.errorBody().string();
+                            Gson gson = new Gson();
+                            com.example.tubemindai.api.models.ApiError error = gson.fromJson(errorBody, com.example.tubemindai.api.models.ApiError.class);
+                            if (error.getMessage() != null) {
+                                errorMessage = error.getMessage();
+                            } else if (error.getDetail() != null) {
+                                errorMessage = error.getDetail();
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    Toast.makeText(SignupActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<RegisterResponse> call, Throwable t) {
+                btnSignup.setEnabled(true);
+                btnSignup.setText("Create Account");
+                Toast.makeText(SignupActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void navigateToOtp(String email) {
