@@ -24,8 +24,8 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
     
-    # CORS
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8080"]
+    # CORS - Allow all origins for development (Android apps don't send Origin header, but this ensures compatibility)
+    ALLOWED_ORIGINS: List[str] = ["*"]  # Allow all origins for development
     
     # Email (for OTP)
     SMTP_HOST: str = "smtp.gmail.com"
