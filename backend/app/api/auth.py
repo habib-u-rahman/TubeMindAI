@@ -214,7 +214,10 @@ async def verify_otp(otp_data: OTPVerify, db: Session = Depends(get_db)):
             message="Email verified successfully. You are now logged in.",
             verified=True,
             token=access_token,
-            reset_token=None
+            reset_token=None,
+            user_id=user.id,
+            email=user.email,
+            name=user.name
         )
     
     # Handle forgot_password OTP verification

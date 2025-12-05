@@ -34,8 +34,8 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = "vknr teqb tjsx stlp"
     
     # APIs
-    YOUTUBE_API_KEY: str = ""
-    AI_API_KEY: str = ""
+    YOUTUBE_API_KEY: str = ""  # Optional: For YouTube Data API v3 (yt-dlp works without it)
+    AI_API_KEY: str = ""  # Required: Google Gemini API key for note generation
     
     class Config:
         env_file = ".env"

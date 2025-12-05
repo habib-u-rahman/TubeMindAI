@@ -106,6 +106,9 @@ class OTPVerifyResponse(BaseModel):
     verified: bool
     token: Optional[str] = None  # JWT token for signup
     reset_token: Optional[str] = None  # Reset token for forgot_password
+    user_id: Optional[int] = None  # User ID
+    email: Optional[str] = None  # User email
+    name: Optional[str] = None  # User name
 
 
 # Password Reset Schemas

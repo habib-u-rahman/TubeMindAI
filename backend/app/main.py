@@ -11,6 +11,9 @@ from app.middleware.error_handler import (
 )
 from app.middleware.json_cleaner import JSONCleanerMiddleware
 
+# Import all models to ensure they're registered
+from app.models import User, OTP, Video, Note, Chat
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
@@ -54,7 +57,8 @@ async def health_check():
 
 
 # Import and include routers
-from app.api import auth
+from app.api import auth, video
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(video.router, prefix="/api/video", tags=["Video Notes"])
 
