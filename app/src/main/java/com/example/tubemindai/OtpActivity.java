@@ -130,6 +130,15 @@ public class OtpActivity extends AppCompatActivity {
                         SharedPrefsManager prefsManager = new SharedPrefsManager(OtpActivity.this);
                         prefsManager.saveAccessToken(otpResponse.getToken());
                         
+                        // Save user info if available
+                        if (otpResponse.getUserId() > 0 && otpResponse.getEmail() != null) {
+                            prefsManager.saveUserInfo(
+                                otpResponse.getUserId(),
+                                otpResponse.getEmail(),
+                                otpResponse.getName() != null ? otpResponse.getName() : "User"
+                            );
+                        }
+                        
                         Toast.makeText(OtpActivity.this, otpResponse.getMessage(), Toast.LENGTH_SHORT).show();
                         
                         // Navigate to HomeActivity (user is logged in)

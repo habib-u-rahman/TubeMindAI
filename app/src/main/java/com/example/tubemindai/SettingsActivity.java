@@ -11,6 +11,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
+import com.example.tubemindai.utils.SharedPrefsManager;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
@@ -56,9 +57,22 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void loadSettings() {
-        // Load user info (TODO: Load from backend)
-        tvUserName.setText("John Doe");
-        tvUserEmail.setText("john.doe@example.com");
+        // Load user info from SharedPrefsManager
+        SharedPrefsManager prefsManager = new SharedPrefsManager(this);
+        String userName = prefsManager.getUserName();
+        String userEmail = prefsManager.getUserEmail();
+        
+        if (userName != null && !userName.isEmpty()) {
+            tvUserName.setText(userName);
+        } else {
+            tvUserName.setText("User");
+        }
+        
+        if (userEmail != null && !userEmail.isEmpty()) {
+            tvUserEmail.setText(userEmail);
+        } else {
+            tvUserEmail.setText("user@example.com");
+        }
 
         // Load dark mode preference
         boolean isDarkMode = sharedPreferences.getBoolean(KEY_DARK_MODE, false);
@@ -112,17 +126,23 @@ public class SettingsActivity extends AppCompatActivity {
 
         // Logout
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
-            // Clear preferences
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.clear();
-            editor.apply();
-
-            // Navigate to Login
-            Intent intent = new Intent(SettingsActivity.this, LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
+            performLogout();
         });
+    }
+    
+    private void performLogout() {
+        // Clear all user data using SharedPrefsManager
+        SharedPrefsManager prefsManager = new SharedPrefsManager(this);
+        prefsManager.logout();
+        
+        // Show logout message
+        Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
+        
+        // Navigate to LoginActivity and clear back stack
+        Intent intent = new Intent(SettingsActivity.this, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 }
 

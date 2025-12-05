@@ -5,6 +5,9 @@ public class OtpVerifyResponse {
     private boolean verified;
     private String token;
     private String reset_token;
+    private int user_id;
+    private String email;
+    private String name;
 
     public String getMessage() {
         return message;
@@ -36,6 +39,30 @@ public class OtpVerifyResponse {
 
     public void setResetToken(String reset_token) {
         this.reset_token = reset_token;
+    }
+
+    public int getUserId() {
+        return user_id;
+    }
+
+    public void setUserId(int user_id) {
+        this.user_id = user_id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }
 

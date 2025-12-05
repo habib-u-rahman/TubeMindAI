@@ -1,9 +1,12 @@
 package com.example.tubemindai;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -15,15 +18,25 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.tubemindai.adapters.VideoAdapter;
+import com.example.tubemindai.api.ApiClient;
+import com.example.tubemindai.api.ApiService;
+import com.example.tubemindai.api.models.VideoGenerateRequest;
+import com.example.tubemindai.api.models.VideoGenerateResponse;
 import com.example.tubemindai.models.VideoModel;
+import com.example.tubemindai.utils.SharedPrefsManager;
 import com.example.tubemindai.utils.ValidationUtils;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 /**
  * Home Activity - Main screen with video URL input and recent videos
@@ -41,6 +54,18 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // Check if user is logged in
+        SharedPrefsManager prefsManager = new SharedPrefsManager(this);
+        if (!prefsManager.isLoggedIn()) {
+            // User is not logged in, redirect to LoginActivity
+            Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+            return;
+        }
+        
         setContentView(R.layout.activity_home);
 
         initViews();
@@ -48,7 +73,8 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         setupDrawer();
         setupRecyclerView();
         setupClickListeners();
-        loadDummyData();
+        loadUserData();
+        loadRecentVideos();
     }
 
     private void initViews() {
@@ -74,6 +100,26 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         toggle.syncState();
 
         navigationView.setNavigationItemSelectedListener(this);
+    }
+    
+    private void loadUserData() {
+        SharedPrefsManager prefsManager = new SharedPrefsManager(this);
+        String userName = prefsManager.getUserName();
+        String userEmail = prefsManager.getUserEmail();
+        
+        // Get drawer header view and update user info
+        View headerView = navigationView.getHeaderView(0);
+        if (headerView != null) {
+            TextView tvUserName = headerView.findViewById(R.id.tvUserName);
+            TextView tvUserEmail = headerView.findViewById(R.id.tvUserEmail);
+            
+            if (tvUserName != null && userName != null) {
+                tvUserName.setText(userName);
+            }
+            if (tvUserEmail != null && userEmail != null) {
+                tvUserEmail.setText(userEmail);
+            }
+        }
     }
 
     private void setupRecyclerView() {
@@ -108,29 +154,146 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
             return;
         }
 
-        // TODO: Call backend API to generate notes
-        Toast.makeText(this, "Generating notes...", Toast.LENGTH_SHORT).show();
+        // Disable button and show loading
+        btnGenerateNotes.setEnabled(false);
+        btnGenerateNotes.setText("Generating...");
 
-        // Navigate to NotesActivity with dummy data
-        Intent intent = new Intent(HomeActivity.this, NotesActivity.class);
-        intent.putExtra("videoId", ValidationUtils.extractVideoId(videoUrl));
-        intent.putExtra("videoTitle", "Sample Video Title");
-        intent.putExtra("videoUrl", videoUrl);
-        startActivity(intent);
+        // Get access token
+        SharedPrefsManager prefsManager = new SharedPrefsManager(this);
+        String accessToken = prefsManager.getAccessToken();
+
+        if (accessToken == null) {
+            Toast.makeText(this, "Please login again", Toast.LENGTH_SHORT).show();
+            btnGenerateNotes.setEnabled(true);
+            btnGenerateNotes.setText("Generate Notes");
+            Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
+        // Call API to generate notes
+        callGenerateNotesAPI(videoUrl, accessToken);
     }
 
-    private void loadDummyData() {
-        // Add dummy recent videos
-        videoList.add(new VideoModel("1", "Introduction to Android Development", 
-                "https://youtube.com/watch?v=abc123", "", "2 days ago", "15:30"));
-        videoList.add(new VideoModel("2", "Material Design 3 Tutorial", 
-                "https://youtube.com/watch?v=def456", "", "5 days ago", "22:15"));
-        videoList.add(new VideoModel("3", "Kotlin vs Java Comparison", 
-                "https://youtube.com/watch?v=ghi789", "", "1 week ago", "18:45"));
-        videoList.add(new VideoModel("4", "RecyclerView Best Practices", 
-                "https://youtube.com/watch?v=jkl012", "", "2 weeks ago", "12:20"));
+    private void callGenerateNotesAPI(String videoUrl, String accessToken) {
+        ApiService apiService = ApiClient.getApiService();
+        VideoGenerateRequest request = new VideoGenerateRequest(videoUrl);
+        
+        // Add Bearer token
+        String authHeader = "Bearer " + accessToken;
 
-        videoAdapter.notifyDataSetChanged();
+        Call<VideoGenerateResponse> call = apiService.generateVideoNotes(authHeader, request);
+        call.enqueue(new Callback<VideoGenerateResponse>() {
+            @Override
+            public void onResponse(Call<VideoGenerateResponse> call, Response<VideoGenerateResponse> response) {
+                btnGenerateNotes.setEnabled(true);
+                btnGenerateNotes.setText("Generate Notes");
+
+                if (response.isSuccessful() && response.body() != null) {
+                    VideoGenerateResponse videoResponse = response.body();
+                    
+                    Toast.makeText(HomeActivity.this, videoResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    
+                    // Navigate to NotesActivity with generated notes
+                    Intent intent = new Intent(HomeActivity.this, NotesActivity.class);
+                    intent.putExtra("videoId", videoResponse.getYoutubeVideoId());
+                    intent.putExtra("videoTitle", videoResponse.getTitle());
+                    intent.putExtra("videoUrl", videoUrl);
+                    intent.putExtra("videoDbId", videoResponse.getVideoId());
+                    intent.putExtra("summary", videoResponse.getSummary());
+                    intent.putExtra("keyPoints", videoResponse.getKeyPoints());
+                    intent.putExtra("bulletNotes", videoResponse.getBulletNotes());
+                    startActivity(intent);
+                    
+                    // Clear input
+                    etVideoUrl.setText("");
+                } else {
+                    String errorMessage = "Failed to generate notes";
+                    try {
+                        if (response.errorBody() != null) {
+                            String errorBody = response.errorBody().string();
+                            Gson gson = new Gson();
+                            com.example.tubemindai.api.models.ApiError error = gson.fromJson(errorBody, com.example.tubemindai.api.models.ApiError.class);
+                            if (error.getMessage() != null) {
+                                errorMessage = error.getMessage();
+                            } else if (error.getDetail() != null) {
+                                errorMessage = error.getDetail();
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    Toast.makeText(HomeActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<VideoGenerateResponse> call, Throwable t) {
+                btnGenerateNotes.setEnabled(true);
+                btnGenerateNotes.setText("Generate Notes");
+                Toast.makeText(HomeActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void loadRecentVideos() {
+        SharedPrefsManager prefsManager = new SharedPrefsManager(this);
+        String accessToken = prefsManager.getAccessToken();
+
+        if (accessToken == null) {
+            // User not logged in, show empty list
+            return;
+        }
+
+        ApiService apiService = ApiClient.getApiService();
+        String authHeader = "Bearer " + accessToken;
+
+        Call<com.example.tubemindai.api.models.VideoListResponse> call = apiService.getUserVideos(authHeader, 0, 10);
+        call.enqueue(new Callback<com.example.tubemindai.api.models.VideoListResponse>() {
+            @Override
+            public void onResponse(Call<com.example.tubemindai.api.models.VideoListResponse> call, Response<com.example.tubemindai.api.models.VideoListResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    com.example.tubemindai.api.models.VideoListResponse videoListResponse = response.body();
+                    
+                    videoList.clear();
+                    for (com.example.tubemindai.api.models.VideoResponse video : videoListResponse.getVideos()) {
+                        // Convert API response to VideoModel
+                        String duration = video.getDuration() != null ? video.getDuration() : "";
+                        String timeAgo = formatTimeAgo(video.getCreatedAt());
+                        
+                        VideoModel videoModel = new VideoModel(
+                            String.valueOf(video.getId()),
+                            video.getTitle(),
+                            video.getVideoUrl(),
+                            video.getThumbnailUrl() != null ? video.getThumbnailUrl() : "",
+                            timeAgo,
+                            duration
+                        );
+                        videoList.add(videoModel);
+                    }
+                    videoAdapter.notifyDataSetChanged();
+                } else {
+                    // If API fails, show empty list
+                    videoList.clear();
+                    videoAdapter.notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<com.example.tubemindai.api.models.VideoListResponse> call, Throwable t) {
+                // On failure, show empty list
+                videoList.clear();
+                videoAdapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    private String formatTimeAgo(String createdAt) {
+        // Simple time formatting - you can improve this later
+        if (createdAt == null) return "Recently";
+        // For now, just return "Recently" - can be improved with proper date parsing
+        return "Recently";
     }
 
     @Override
@@ -153,14 +316,26 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
             startActivity(intent);
             drawerLayout.closeDrawer(GravityCompat.START);
         } else if (id == R.id.nav_logout) {
-            // Logout and return to Login
-            Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
+            // Logout user
+            performLogout();
         }
 
         return true;
+    }
+
+    private void performLogout() {
+        // Clear all user data using SharedPrefsManager
+        SharedPrefsManager prefsManager = new SharedPrefsManager(this);
+        prefsManager.logout();
+        
+        // Show logout message
+        Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
+        
+        // Navigate to LoginActivity and clear back stack
+        Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     @Override
