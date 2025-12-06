@@ -51,3 +51,23 @@ class NoteResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+class ChatMessageRequest(BaseModel):
+    message: str = Field(..., description="User's chat message/question", min_length=1, max_length=2000)
+
+
+class ChatMessageResponse(BaseModel):
+    id: int
+    message: str
+    response: Optional[str] = None
+    is_user_message: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ChatHistoryResponse(BaseModel):
+    messages: List[ChatMessageResponse]
+    total: int
+

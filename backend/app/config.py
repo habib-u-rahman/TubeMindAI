@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import List
+from pathlib import Path
 
 
 class Settings(BaseSettings):
@@ -17,7 +18,7 @@ class Settings(BaseSettings):
     # JWT
     SECRET_KEY: str = "your-secret-key-change-in-production-min-32-chars"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours (1440 minutes) - better UX
     
     # Application
     APP_NAME: str = "TubeMind AI API"
@@ -35,10 +36,12 @@ class Settings(BaseSettings):
     
     # APIs
     YOUTUBE_API_KEY: str = ""  # Optional: For YouTube Data API v3 (yt-dlp works without it)
-    AI_API_KEY: str = ""  # Required: Google Gemini API key for note generation
+    AI_API_KEY: str = "AIzaSyCb0aDJEbHHwZMehwhnNjONX8Aq64MxAVs"  # Google Gemini API key - Set directly in code for now
     
     class Config:
-        env_file = ".env"
+        # Load .env file from backend directory (parent of app directory)
+        env_file = str(Path(__file__).parent.parent / ".env")
+        env_file_encoding = "utf-8"
         case_sensitive = True
 
 
