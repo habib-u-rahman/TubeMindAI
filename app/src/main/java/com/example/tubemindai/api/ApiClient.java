@@ -17,8 +17,12 @@ public class ApiClient {
             HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
             loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
-            // Create OkHttp client
+            // Create OkHttp client with increased timeouts for note generation
+            // Note generation can take 30-60 seconds, so we need longer timeouts
             OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                    .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)  // Connection timeout: 30 seconds
+                    .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)     // Read timeout: 2 minutes (for note generation)
+                    .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)    // Write timeout: 30 seconds
                     .addInterceptor(loggingInterceptor)
                     .build();
 

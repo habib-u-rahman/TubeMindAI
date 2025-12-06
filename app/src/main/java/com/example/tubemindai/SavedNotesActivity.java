@@ -1,20 +1,34 @@
 package com.example.tubemindai;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.tubemindai.adapters.NotesAdapter;
+import com.example.tubemindai.api.ApiClient;
+import com.example.tubemindai.api.ApiService;
+import com.example.tubemindai.api.models.VideoListResponse;
+import com.example.tubemindai.api.models.VideoResponse;
 import com.example.tubemindai.models.NotesModel;
+import com.example.tubemindai.utils.SharedPrefsManager;
 import com.google.android.material.appbar.MaterialToolbar;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 /**
  * Saved Notes Activity - Displays all saved notes
@@ -25,11 +39,18 @@ public class SavedNotesActivity extends AppCompatActivity {
     private LinearLayout llEmptyState;
     private NotesAdapter notesAdapter;
     private List<NotesModel> notesList;
+    private ApiService apiService;
+    private SharedPrefsManager prefsManager;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_saved_notes);
+
+        // Initialize API service
+        apiService = ApiClient.getApiService();
+        prefsManager = new SharedPrefsManager(this);
 
         initViews();
         setupToolbar();
@@ -56,6 +77,7 @@ public class SavedNotesActivity extends AppCompatActivity {
             intent.putExtra("videoId", notes.getVideoId());
             intent.putExtra("videoTitle", notes.getVideoTitle());
             intent.putExtra("videoUrl", notes.getVideoUrl());
+            intent.putExtra("videoDbId", Integer.parseInt(notes.getNoteId())); // Use noteId as videoDbId
             startActivity(intent);
         });
 
@@ -64,46 +86,122 @@ public class SavedNotesActivity extends AppCompatActivity {
     }
 
     private void loadSavedNotes() {
-        // TODO: Load saved notes from backend/database
-        // For now, load dummy data
-        notesList.clear();
-        
-        notesList.add(new NotesModel(
-                "1", "vid1", "Introduction to Android Development",
-                "https://youtube.com/watch?v=abc123",
-                "This video provides a comprehensive overview of Android development, covering fundamental concepts and practical applications.",
-                "• Point 1: Android architecture\n• Point 2: UI components\n• Point 3: Data storage",
-                "• Note 1: Important concept A\n• Note 2: Key detail B\n• Note 3: Practical tip C",
-                "2 days ago", true
-        ));
-        
-        notesList.add(new NotesModel(
-                "2", "vid2", "Material Design 3 Tutorial",
-                "https://youtube.com/watch?v=def456",
-                "Learn about Material Design 3 components and how to implement them in your Android applications.",
-                "• Point 1: Design principles\n• Point 2: Component library\n• Point 3: Theming",
-                "• Note 1: Design system\n• Note 2: Color schemes\n• Note 3: Typography",
-                "5 days ago", true
-        ));
-        
-        notesList.add(new NotesModel(
-                "3", "vid3", "Kotlin vs Java Comparison",
-                "https://youtube.com/watch?v=ghi789",
-                "A detailed comparison between Kotlin and Java for Android development.",
-                "• Point 1: Syntax differences\n• Point 2: Performance\n• Point 3: Migration",
-                "• Note 1: Language features\n• Note 2: Best practices\n• Note 3: When to use each",
-                "1 week ago", true
-        ));
+        // Check if user is logged in
+        String token = prefsManager.getAccessToken();
+        if (token == null || token.isEmpty()) {
+            Toast.makeText(this, "Please login to view saved notes", Toast.LENGTH_SHORT).show();
+            showEmptyState();
+            return;
+        }
 
-        notesAdapter.notifyDataSetChanged();
+        showProgressDialog("Loading saved notes...");
+
+        String authHeader = "Bearer " + token;
+        Call<VideoListResponse> call = apiService.getUserVideos(authHeader, 0, 100); // Get up to 100 videos
         
-        // Show/hide empty state
-        if (notesList.isEmpty()) {
-            rvSavedNotes.setVisibility(View.GONE);
-            llEmptyState.setVisibility(View.VISIBLE);
-        } else {
-            rvSavedNotes.setVisibility(View.VISIBLE);
-            llEmptyState.setVisibility(View.GONE);
+        call.enqueue(new Callback<VideoListResponse>() {
+            @Override
+            public void onResponse(Call<VideoListResponse> call, Response<VideoListResponse> response) {
+                hideProgressDialog();
+                
+                if (response.isSuccessful() && response.body() != null) {
+                    VideoListResponse videoListResponse = response.body();
+                    List<VideoResponse> videos = videoListResponse.getVideos();
+                    
+                    notesList.clear();
+                    
+                    if (videos != null) {
+                        // Filter only saved videos (is_saved = true)
+                        for (VideoResponse video : videos) {
+                            if (video.isSaved()) {
+                                // Format date
+                                String dateStr = formatDate(video.getCreatedAt());
+                                
+                                NotesModel note = new NotesModel(
+                                        String.valueOf(video.getId()),
+                                        video.getVideoId(),
+                                        video.getTitle(),
+                                        video.getVideoUrl(),
+                                        video.getSummary() != null ? video.getSummary() : "",
+                                        video.getKeyPoints() != null ? video.getKeyPoints() : "",
+                                        video.getBulletNotes() != null ? video.getBulletNotes() : "",
+                                        dateStr,
+                                        true
+                                );
+                                notesList.add(note);
+                            }
+                        }
+                    }
+                    
+                    notesAdapter.notifyDataSetChanged();
+                    
+                    // Show/hide empty state
+                    if (notesList.isEmpty()) {
+                        showEmptyState();
+                    } else {
+                        hideEmptyState();
+                    }
+                } else {
+                    // Handle 401 (token expired) - redirect to login
+                    if (com.example.tubemindai.utils.ApiErrorHandler.handleError(SavedNotesActivity.this, response)) {
+                        finish(); // Close this activity after redirecting to login
+                        return;
+                    }
+                    
+                    // Handle other errors
+                    String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.getErrorMessage(response);
+                    Toast.makeText(SavedNotesActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                    showEmptyState();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<VideoListResponse> call, Throwable t) {
+                hideProgressDialog();
+                Toast.makeText(SavedNotesActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                showEmptyState();
+            }
+        });
+    }
+
+    private String formatDate(String dateStr) {
+        try {
+            // Parse ISO 8601 date format
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+            SimpleDateFormat outputFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+            
+            Date date = inputFormat.parse(dateStr);
+            if (date != null) {
+                return outputFormat.format(date);
+            }
+        } catch (Exception e) {
+            // If parsing fails, return original string
+        }
+        return dateStr != null ? dateStr : "Unknown date";
+    }
+
+    private void showEmptyState() {
+        rvSavedNotes.setVisibility(View.GONE);
+        llEmptyState.setVisibility(View.VISIBLE);
+    }
+
+    private void hideEmptyState() {
+        rvSavedNotes.setVisibility(View.VISIBLE);
+        llEmptyState.setVisibility(View.GONE);
+    }
+
+    private void showProgressDialog(String message) {
+        if (progressDialog == null) {
+            progressDialog = new ProgressDialog(this);
+            progressDialog.setCancelable(false);
+        }
+        progressDialog.setMessage(message);
+        progressDialog.show();
+    }
+
+    private void hideProgressDialog() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
         }
     }
 }

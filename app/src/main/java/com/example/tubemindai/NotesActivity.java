@@ -133,19 +133,14 @@ public class NotesActivity extends AppCompatActivity {
                         tvVideoTitle.setText(videoResponse.getTitle());
                     }
                 } else {
-                    String errorMessage = "Failed to load notes";
-                    try {
-                        if (response.errorBody() != null) {
-                            String errorBody = response.errorBody().string();
-                            Gson gson = new Gson();
-                            com.example.tubemindai.api.models.ApiError error = gson.fromJson(errorBody, com.example.tubemindai.api.models.ApiError.class);
-                            if (error.getMessage() != null) {
-                                errorMessage = error.getMessage();
-                            }
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    // Handle 401 (token expired) - redirect to login
+                    if (com.example.tubemindai.utils.ApiErrorHandler.handleError(NotesActivity.this, response)) {
+                        finish(); // Close this activity after redirecting to login
+                        return;
                     }
+                    
+                    // Handle other errors
+                    String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.getErrorMessage(response);
                     Toast.makeText(NotesActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                     tvSummary.setText("Failed to load notes. " + errorMessage);
                 }
@@ -201,6 +196,12 @@ public class NotesActivity extends AppCompatActivity {
                     // Store database ID for save functionality
                     videoDbId = videoResponse.getId();
                 } else {
+                    // Handle 401 (token expired) - redirect to login
+                    if (com.example.tubemindai.utils.ApiErrorHandler.handleError(NotesActivity.this, response)) {
+                        finish(); // Close this activity after redirecting to login
+                        return;
+                    }
+                    
                     Toast.makeText(NotesActivity.this, "Video notes not found. Please generate notes first.", Toast.LENGTH_LONG).show();
                     tvSummary.setText("No notes available. Please go back and generate notes first.");
                 }
@@ -236,6 +237,7 @@ public class NotesActivity extends AppCompatActivity {
             Intent intent = new Intent(NotesActivity.this, ChatActivity.class);
             intent.putExtra("videoId", videoId);
             intent.putExtra("videoTitle", videoTitle);
+            intent.putExtra("videoDbId", videoDbId); // Pass database ID for chat API
             startActivity(intent);
         });
 
@@ -277,19 +279,14 @@ public class NotesActivity extends AppCompatActivity {
                     btnSaveToHistory.setText("Saved ✓");
                     btnSaveToHistory.setEnabled(false);
                 } else {
-                    String errorMessage = "Failed to save notes";
-                    try {
-                        if (response.errorBody() != null) {
-                            String errorBody = response.errorBody().string();
-                            Gson gson = new Gson();
-                            com.example.tubemindai.api.models.ApiError error = gson.fromJson(errorBody, com.example.tubemindai.api.models.ApiError.class);
-                            if (error.getMessage() != null) {
-                                errorMessage = error.getMessage();
-                            }
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    // Handle 401 (token expired) - redirect to login
+                    if (com.example.tubemindai.utils.ApiErrorHandler.handleError(NotesActivity.this, response)) {
+                        finish(); // Close this activity after redirecting to login
+                        return;
                     }
+                    
+                    // Handle other errors
+                    String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.getErrorMessage(response);
                     Toast.makeText(NotesActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
                 }
             }

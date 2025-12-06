@@ -209,21 +209,14 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
                     // Clear input
                     etVideoUrl.setText("");
                 } else {
-                    String errorMessage = "Failed to generate notes";
-                    try {
-                        if (response.errorBody() != null) {
-                            String errorBody = response.errorBody().string();
-                            Gson gson = new Gson();
-                            com.example.tubemindai.api.models.ApiError error = gson.fromJson(errorBody, com.example.tubemindai.api.models.ApiError.class);
-                            if (error.getMessage() != null) {
-                                errorMessage = error.getMessage();
-                            } else if (error.getDetail() != null) {
-                                errorMessage = error.getDetail();
-                            }
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    // Handle 401 (token expired) - redirect to login
+                    if (com.example.tubemindai.utils.ApiErrorHandler.handleError(HomeActivity.this, response)) {
+                        finish(); // Close this activity after redirecting to login
+                        return;
                     }
+                    
+                    // Handle other errors
+                    String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.getErrorMessage(response);
                     Toast.makeText(HomeActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                 }
             }
@@ -232,7 +225,10 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
             public void onFailure(Call<VideoGenerateResponse> call, Throwable t) {
                 btnGenerateNotes.setEnabled(true);
                 btnGenerateNotes.setText("Generate Notes");
-                Toast.makeText(HomeActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                
+                // Handle network errors with user-friendly message
+                String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.handleNetworkError(t);
+                Toast.makeText(HomeActivity.this, errorMessage, Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -274,6 +270,11 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
                     }
                     videoAdapter.notifyDataSetChanged();
                 } else {
+                    // Handle 401 (token expired) - redirect to login
+                    if (com.example.tubemindai.utils.ApiErrorHandler.handleError(HomeActivity.this, response)) {
+                        finish(); // Close this activity after redirecting to login
+                        return;
+                    }
                     // If API fails, show empty list
                     videoList.clear();
                     videoAdapter.notifyDataSetChanged();

@@ -14,6 +14,9 @@ import com.example.tubemindai.api.models.VideoGenerateRequest;
 import com.example.tubemindai.api.models.VideoGenerateResponse;
 import com.example.tubemindai.api.models.VideoResponse;
 import com.example.tubemindai.api.models.VideoListResponse;
+import com.example.tubemindai.api.models.ChatMessageRequest;
+import com.example.tubemindai.api.models.ChatMessageResponse;
+import com.example.tubemindai.api.models.ChatHistoryResponse;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -81,6 +84,23 @@ public interface ApiService {
     @GET("api/video/")
     Call<VideoListResponse> getUserVideos(
         @Header("Authorization") String token,
+        @Query("skip") int skip,
+        @Query("limit") int limit
+    );
+    
+    // Send Chat Message
+    @POST("api/video/{video_id}/chat")
+    Call<ChatMessageResponse> sendChatMessage(
+        @Header("Authorization") String token,
+        @Path("video_id") int videoId,
+        @Body ChatMessageRequest request
+    );
+    
+    // Get Chat History
+    @GET("api/video/{video_id}/chat")
+    Call<ChatHistoryResponse> getChatHistory(
+        @Header("Authorization") String token,
+        @Path("video_id") int videoId,
         @Query("skip") int skip,
         @Query("limit") int limit
     );
