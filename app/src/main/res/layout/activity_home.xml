@@ -18,7 +18,6 @@
             android:id="@+id/appBarLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -29,7 +28,8 @@
                 android:layout_height="?attr/actionBarSize"
                 android:background="@android:color/transparent"
                 android:elevation="0dp"
-                app:navigationIcon="@drawable/ic_home"
+                app:navigationIcon="@drawable/ic_menu"
+                app:navigationIconTint="@color/black"
                 app:title="TubeMind AI"
                 app:titleTextColor="@color/text_primary_light" />
         </com.google.android.material.appbar.AppBarLayout>

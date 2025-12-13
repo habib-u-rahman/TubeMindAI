@@ -71,3 +71,22 @@ class ChatHistoryResponse(BaseModel):
     messages: List[ChatMessageResponse]
     total: int
 
+
+class ChatHistoryItem(BaseModel):
+    """Chat history item grouped by video"""
+    video_id: int
+    video_title: str
+    video_thumbnail_url: Optional[str] = None
+    last_message: Optional[str] = None
+    last_message_time: Optional[datetime] = None
+    message_count: int
+    youtube_video_id: str
+
+    class Config:
+        from_attributes = True
+
+
+class ChatHistoryListResponse(BaseModel):
+    """List of chat histories grouped by video"""
+    histories: List[ChatHistoryItem]
+    total: int

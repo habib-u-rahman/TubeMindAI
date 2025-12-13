@@ -1,17 +1,26 @@
 package com.example.tubemindai;
 
-import android.app.ProgressDialog;
+import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.RotateAnimation;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -50,6 +59,22 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
     private RecyclerView rvRecentVideos;
     private VideoAdapter videoAdapter;
     private List<VideoModel> videoList;
+    private Dialog loadingDialog;
+    private Handler loadingHandler;
+    private Handler dotsHandler;
+    private Runnable loadingRunnable;
+    private Runnable dotsRunnable;
+    private int loadingStep = 0;
+    private int dotIndex = 0;
+    private String[] loadingMessages = {
+        "Fetching video information...",
+        "Extracting transcript...",
+        "Analyzing content...",
+        "Generating summary...",
+        "Creating key points...",
+        "Finalizing notes..."
+    };
+    private String[] dots = {"", ".", "..", "..."};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +113,12 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
 
     private void setupToolbar() {
         setSupportActionBar(toolbar);
+        // Ensure navigation icon is visible - set to black
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+        // Set navigation icon color to black for visibility (override theme)
+        toolbar.setNavigationIconTint(ContextCompat.getColor(this, R.color.black));
         toolbar.setNavigationOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
     }
 
@@ -100,6 +131,11 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         toggle.syncState();
 
         navigationView.setNavigationItemSelectedListener(this);
+        
+        // Set navigation icon color to black after toggle sync (use post to ensure it's applied)
+        toolbar.post(() -> {
+            toolbar.setNavigationIconTint(ContextCompat.getColor(HomeActivity.this, R.color.black));
+        });
     }
     
     private void loadUserData() {
@@ -154,18 +190,18 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
             return;
         }
 
-        // Disable button and show loading
+        // Disable button and show animated loading dialog
         btnGenerateNotes.setEnabled(false);
-        btnGenerateNotes.setText("Generating...");
+        showLoadingDialog();
 
         // Get access token
         SharedPrefsManager prefsManager = new SharedPrefsManager(this);
         String accessToken = prefsManager.getAccessToken();
 
         if (accessToken == null) {
+            hideLoadingDialog();
             Toast.makeText(this, "Please login again", Toast.LENGTH_SHORT).show();
             btnGenerateNotes.setEnabled(true);
-            btnGenerateNotes.setText("Generate Notes");
             Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
             startActivity(intent);
             finish();
@@ -192,8 +228,8 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         call.enqueue(new Callback<VideoGenerateResponse>() {
             @Override
             public void onResponse(Call<VideoGenerateResponse> call, Response<VideoGenerateResponse> response) {
+                hideLoadingDialog();
                 btnGenerateNotes.setEnabled(true);
-                btnGenerateNotes.setText("Generate Notes");
                 
                 android.util.Log.d("HomeActivity", "API Response Code: " + response.code());
                 android.util.Log.d("HomeActivity", "Response Successful: " + response.isSuccessful());
@@ -238,8 +274,8 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
 
             @Override
             public void onFailure(Call<VideoGenerateResponse> call, Throwable t) {
+                hideLoadingDialog();
                 btnGenerateNotes.setEnabled(true);
-                btnGenerateNotes.setText("Generate Notes");
                 
                 // Handle network errors with user-friendly message
                 String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.handleNetworkError(t);
@@ -366,6 +402,151 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
             drawerLayout.closeDrawer(GravityCompat.START);
         } else {
             super.onBackPressed();
+        }
+    }
+
+    private void showLoadingDialog() {
+        if (loadingDialog == null) {
+            loadingDialog = new Dialog(this);
+            loadingDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+            loadingDialog.setContentView(R.layout.dialog_loading_notes);
+            loadingDialog.setCancelable(false);
+            loadingDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            loadingDialog.getWindow().setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        // Get views
+        ImageView ivIcon = loadingDialog.findViewById(R.id.ivLoadingIcon);
+        TextView tvMessage = loadingDialog.findViewById(R.id.tvLoadingMessage);
+        TextView tvDots = loadingDialog.findViewById(R.id.tvLoadingDots);
+
+        // Start icon rotation animation
+        if (ivIcon != null) {
+            RotateAnimation rotate = new RotateAnimation(
+                0, 360,
+                Animation.RELATIVE_TO_SELF, 0.5f,
+                Animation.RELATIVE_TO_SELF, 0.5f
+            );
+            rotate.setDuration(2000);
+            rotate.setRepeatCount(Animation.INFINITE);
+            rotate.setInterpolator(new android.view.animation.LinearInterpolator());
+            ivIcon.startAnimation(rotate);
+        }
+
+        // Reset loading step
+        loadingStep = 0;
+        
+        // Start message rotation
+        startLoadingMessageAnimation(tvMessage, tvDots);
+
+        // Show dialog with fade in animation
+        loadingDialog.show();
+        if (loadingDialog.getWindow() != null) {
+            Animation fadeIn = AnimationUtils.loadAnimation(this, android.R.anim.fade_in);
+            loadingDialog.getWindow().getDecorView().startAnimation(fadeIn);
+        }
+    }
+
+    private void startLoadingMessageAnimation(TextView tvMessage, TextView tvDots) {
+        if (loadingHandler == null) {
+            loadingHandler = new Handler(Looper.getMainLooper());
+        }
+
+        // Cancel previous runnable if exists
+        if (loadingRunnable != null) {
+            loadingHandler.removeCallbacks(loadingRunnable);
+        }
+
+        loadingRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (loadingDialog != null && loadingDialog.isShowing()) {
+                    // Update message
+                    if (tvMessage != null && loadingStep < loadingMessages.length) {
+                        tvMessage.setText(loadingMessages[loadingStep]);
+                        loadingStep = (loadingStep + 1) % loadingMessages.length;
+                    }
+
+                    // Animate dots
+                    animateDots(tvDots);
+
+                    // Schedule next update (every 2 seconds)
+                    loadingHandler.postDelayed(this, 2000);
+                }
+            }
+        };
+
+        // Start immediately
+        loadingRunnable.run();
+    }
+
+    private void animateDots(TextView tvDots) {
+        if (tvDots == null) return;
+
+        // Cancel previous dots animation if exists
+        if (dotsHandler != null && dotsRunnable != null) {
+            dotsHandler.removeCallbacks(dotsRunnable);
+        }
+
+        if (dotsHandler == null) {
+            dotsHandler = new Handler(Looper.getMainLooper());
+        }
+
+        // Animate dots: . -> .. -> ... -> (empty) -> repeat
+        dotsRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (loadingDialog != null && loadingDialog.isShowing() && tvDots != null) {
+                    tvDots.setText(dots[dotIndex]);
+                    dotIndex = (dotIndex + 1) % dots.length;
+                    dotsHandler.postDelayed(this, 500);
+                }
+            }
+        };
+        dotIndex = 0;
+        dotsHandler.post(dotsRunnable);
+    }
+
+    private void hideLoadingDialog() {
+        // Stop all animations
+        if (loadingHandler != null && loadingRunnable != null) {
+            loadingHandler.removeCallbacks(loadingRunnable);
+        }
+        if (dotsHandler != null && dotsRunnable != null) {
+            dotsHandler.removeCallbacks(dotsRunnable);
+        }
+
+        if (loadingDialog != null && loadingDialog.isShowing()) {
+            // Stop icon animation
+            ImageView ivIcon = loadingDialog.findViewById(R.id.ivLoadingIcon);
+            if (ivIcon != null) {
+                ivIcon.clearAnimation();
+            }
+
+            // Fade out animation
+            if (loadingDialog.getWindow() != null) {
+                Animation fadeOut = AnimationUtils.loadAnimation(this, android.R.anim.fade_out);
+                loadingDialog.getWindow().getDecorView().startAnimation(fadeOut);
+            }
+            
+            // Dismiss after animation
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (loadingDialog != null && loadingDialog.isShowing()) {
+                    loadingDialog.dismiss();
+                }
+            }, 200);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        hideLoadingDialog();
+        if (loadingHandler != null && loadingRunnable != null) {
+            loadingHandler.removeCallbacks(loadingRunnable);
+        }
+        if (dotsHandler != null && dotsRunnable != null) {
+            dotsHandler.removeCallbacks(dotsRunnable);
         }
     }
 }

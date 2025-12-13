@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     
     # APIs
     YOUTUBE_API_KEY: str = ""  # Optional: For YouTube Data API v3 (yt-dlp works without it)
-    AI_API_KEY: str = "AIzaSyAww1ujpfb0btpVJ5xIA7Bx0swE8BTWdxE"  # Google Gemini API key - Set directly in code for now
+    AI_API_KEY: str = "AIzaSyClNOQEM9XEuRCqVX-J6OgRKk9tyZnjSi0"  # Google Gemini API key - Set directly in code for now
     
     class Config:
         # Load .env file from backend directory (parent of app directory)

@@ -59,12 +59,16 @@ public class ApiErrorHandler {
     public static String getErrorMessage(Response<?> response) {
         try {
             if (response.errorBody() != null) {
-                String errorBody = response.errorBody().string();
-                android.util.Log.e("ApiErrorHandler", "Error response body: " + errorBody);
+                // Read error body (can only be read once)
+                okhttp3.ResponseBody errorBody = response.errorBody();
+                String errorBodyString = errorBody.string();
+                android.util.Log.e("ApiErrorHandler", "Error response body: " + errorBodyString);
+                android.util.Log.e("ApiErrorHandler", "Error response code: " + response.code());
+                android.util.Log.e("ApiErrorHandler", "Error response headers: " + response.headers());
                 
                 Gson gson = new Gson();
                 try {
-                    com.example.tubemindai.api.models.ApiError error = gson.fromJson(errorBody, com.example.tubemindai.api.models.ApiError.class);
+                    com.example.tubemindai.api.models.ApiError error = gson.fromJson(errorBodyString, com.example.tubemindai.api.models.ApiError.class);
                     if (error != null) {
                         if (error.getMessage() != null && !error.getMessage().isEmpty()) {
                             return error.getMessage();
@@ -73,25 +77,65 @@ public class ApiErrorHandler {
                         }
                     }
                 } catch (Exception parseError) {
-                    // If parsing fails, try to extract detail from raw JSON
-                    if (errorBody.contains("\"detail\"")) {
-                        try {
-                            int detailStart = errorBody.indexOf("\"detail\"") + 9;
-                            int detailEnd = errorBody.indexOf("\"", detailStart);
-                            if (detailEnd > detailStart) {
-                                String detail = errorBody.substring(detailStart, detailEnd);
-                                if (!detail.isEmpty()) {
-                                    return detail;
+                    android.util.Log.e("ApiErrorHandler", "Error parsing JSON: " + parseError.getMessage());
+                }
+                
+                // Try to extract detail from raw JSON (FastAPI format)
+                if (errorBodyString.contains("\"detail\"")) {
+                    try {
+                        // Handle both "detail": "message" and "detail": ["message1", "message2"]
+                        int detailStart = errorBodyString.indexOf("\"detail\"") + 9;
+                        // Skip whitespace and colon
+                        while (detailStart < errorBodyString.length() && 
+                               (errorBodyString.charAt(detailStart) == ' ' || 
+                                errorBodyString.charAt(detailStart) == ':' ||
+                                errorBodyString.charAt(detailStart) == ' ')) {
+                            detailStart++;
+                        }
+                        
+                        // Check if it's an array or string
+                        if (detailStart < errorBodyString.length() && errorBodyString.charAt(detailStart) == '[') {
+                            // Array format - extract first message
+                            int arrayStart = detailStart + 1;
+                            int arrayEnd = errorBodyString.indexOf(']', arrayStart);
+                            if (arrayEnd > arrayStart) {
+                                String arrayContent = errorBodyString.substring(arrayStart, arrayEnd);
+                                // Extract first quoted string
+                                int quoteStart = arrayContent.indexOf('"');
+                                if (quoteStart >= 0) {
+                                    int quoteEnd = arrayContent.indexOf('"', quoteStart + 1);
+                                    if (quoteEnd > quoteStart) {
+                                        String detail = arrayContent.substring(quoteStart + 1, quoteEnd);
+                                        if (!detail.isEmpty()) {
+                                            return detail;
+                                        }
+                                    }
                                 }
                             }
-                        } catch (Exception e) {
-                            // Ignore
+                        } else {
+                            // String format
+                            int quoteStart = errorBodyString.indexOf('"', detailStart);
+                            if (quoteStart >= 0) {
+                                int quoteEnd = errorBodyString.indexOf('"', quoteStart + 1);
+                                if (quoteEnd > quoteStart) {
+                                    String detail = errorBodyString.substring(quoteStart + 1, quoteEnd);
+                                    if (!detail.isEmpty()) {
+                                        return detail;
+                                    }
+                                }
+                            }
                         }
+                    } catch (Exception e) {
+                        android.util.Log.e("ApiErrorHandler", "Error extracting detail: " + e.getMessage());
                     }
-                    // Return raw error body if parsing fails
-                    if (errorBody.length() < 200) {
-                        return errorBody;
-                    }
+                }
+                
+                // Return raw error body if it's short enough
+                if (errorBodyString.length() < 300) {
+                    return errorBodyString;
+                } else {
+                    // Return first 200 chars
+                    return errorBodyString.substring(0, 200) + "...";
                 }
             }
         } catch (Exception e) {
@@ -109,7 +153,7 @@ public class ApiErrorHandler {
         } else if (response.code() == 400) {
             return "Bad request. Please check your input.";
         } else if (response.code() >= 500) {
-            return "Server error (Code: " + response.code() + "). Please check backend logs.";
+            return "Server error (Code: " + response.code() + "). Please check backend logs or API key configuration.";
         } else {
             return "Request failed (Code: " + response.code() + "). Please try again.";
         }

@@ -13,6 +13,7 @@ public class HistoryModel {
     private String preview;
     private String date;
     private String videoId;
+    private int videoDbId; // Database video ID for API calls
 
     public HistoryModel() {
     }
@@ -24,6 +25,16 @@ public class HistoryModel {
         this.preview = preview;
         this.date = date;
         this.videoId = videoId;
+    }
+    
+    public HistoryModel(String historyId, int type, String title, String preview, String date, String videoId, int videoDbId) {
+        this.historyId = historyId;
+        this.type = type;
+        this.title = title;
+        this.preview = preview;
+        this.date = date;
+        this.videoId = videoId;
+        this.videoDbId = videoDbId;
     }
 
     public String getHistoryId() {
@@ -72,6 +83,14 @@ public class HistoryModel {
 
     public void setVideoId(String videoId) {
         this.videoId = videoId;
+    }
+
+    public int getVideoDbId() {
+        return videoDbId;
+    }
+
+    public void setVideoDbId(int videoDbId) {
+        this.videoDbId = videoDbId;
     }
 }
 

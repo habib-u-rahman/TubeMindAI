@@ -17,6 +17,8 @@ import com.example.tubemindai.api.models.VideoListResponse;
 import com.example.tubemindai.api.models.ChatMessageRequest;
 import com.example.tubemindai.api.models.ChatMessageResponse;
 import com.example.tubemindai.api.models.ChatHistoryResponse;
+import com.example.tubemindai.api.models.ChatHistoryListResponse;
+import com.example.tubemindai.api.models.DeleteResponse;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -115,6 +117,34 @@ public interface ApiService {
     Call<VideoResponse> deleteVideo(
         @Header("Authorization") String token,
         @Path("video_id") int videoId
+    );
+    
+    // Get All Chat Histories (grouped by video)
+    @GET("api/video/chat/histories")
+    Call<ChatHistoryListResponse> getAllChatHistories(
+        @Header("Authorization") String token,
+        @Query("skip") int skip,
+        @Query("limit") int limit
+    );
+    
+    // Delete a specific chat message
+    @DELETE("api/video/chat/{chat_id}")
+    Call<DeleteResponse> deleteChatMessage(
+        @Header("Authorization") String token,
+        @Path("chat_id") int chatId
+    );
+    
+    // Delete all chat messages for a video
+    @DELETE("api/video/{video_id}/chat")
+    Call<DeleteResponse> deleteVideoChatHistory(
+        @Header("Authorization") String token,
+        @Path("video_id") int videoId
+    );
+    
+    // Delete all chat messages for user
+    @DELETE("api/video/chat/all")
+    Call<DeleteResponse> deleteAllChatHistory(
+        @Header("Authorization") String token
     );
 }
 

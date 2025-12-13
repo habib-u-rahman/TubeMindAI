@@ -10,7 +10,9 @@ from app.schemas.video import (
     VideoListResponse,
     ChatMessageRequest,
     ChatMessageResponse,
-    ChatHistoryResponse
+    ChatHistoryResponse,
+    ChatHistoryItem,
+    ChatHistoryListResponse
 )
 from app.core.security import verify_token
 from app.core.youtube_service import extract_video_id, get_video_info, get_video_info_with_api
@@ -79,13 +81,14 @@ async def generate_video_notes(
             detail="Invalid YouTube URL. Please provide a valid YouTube video URL."
         )
     
-    # Check if video already exists for this user
+    # Check if video already exists for this user WITH COMPLETE NOTES
     existing_video = db.query(Video).filter(
         Video.video_id == video_id,
         Video.user_id == user_id
     ).first()
     
-    if existing_video:
+    # Only return existing video if it has complete notes (summary, key_points, bullet_notes)
+    if existing_video and existing_video.summary and existing_video.key_points and existing_video.bullet_notes:
         return VideoGenerateResponse(
             message="Video notes already generated. Use GET endpoint to retrieve.",
             video_id=existing_video.id,
@@ -97,6 +100,13 @@ async def generate_video_notes(
             bullet_notes=existing_video.bullet_notes,
             status="completed"
         )
+    
+    # If existing video has incomplete notes, delete it and regenerate
+    if existing_video:
+        if settings.DEBUG:
+            print(f"DEBUG: Existing video found but notes are incomplete. Deleting and regenerating...")
+        db.delete(existing_video)
+        db.commit()
     
     # Get video information using yt-dlp (preferred) or YouTube API
     video_info = None
@@ -118,74 +128,78 @@ async def generate_video_notes(
             detail="Could not fetch video information. Please check the video URL."
         )
     
-    # Create video record
-    video = Video(
-        user_id=user_id,
-        video_id=video_id,
-        video_url=request.video_url,
-        title=video_info.get("title", f"Video {video_id}"),
-        thumbnail_url=video_info.get("thumbnail_url"),
-        duration=video_info.get("duration"),
-        transcript=video_info.get("transcript")
-    )
-    
-    db.add(video)
-    db.commit()
-    db.refresh(video)
-    
-    # Generate notes (this can be async/background task in production)
+    # Generate notes FIRST before creating video record
+    # This ensures we only save videos with successfully generated notes
     try:
         transcript = video_info.get("transcript", "")
         if settings.DEBUG:
             print(f"DEBUG: Transcript length: {len(transcript) if transcript else 0}")
             print(f"DEBUG: Video title: {video_info.get('title', 'N/A')}")
         
-        if transcript and transcript.strip():
-            if settings.DEBUG:
-                print(f"DEBUG: Calling generate_notes_from_transcript...")
-                print(f"DEBUG: Transcript preview (first 500 chars): {transcript[:500]}")
-            
-            notes = generate_notes_from_transcript(transcript, video_info.get("title", ""))
-            
-            if notes and notes.get("summary") and notes.get("key_points") and notes.get("bullet_notes"):
-                # Validate notes are not placeholder
-                summary = notes.get("summary", "")
-                if "contains valuable content" in summary.lower() and "watch the video" in summary.lower():
-                    if settings.DEBUG:
-                        print(f"DEBUG: WARNING - Received placeholder notes, this should not happen!")
-                    # This shouldn't happen, but if it does, retry or fail
-                    raise Exception("AI service returned placeholder notes instead of real notes")
-                
-                video.summary = notes.get("summary")
-                video.key_points = notes.get("key_points")
-                video.bullet_notes = notes.get("bullet_notes")
-                if settings.DEBUG:
-                    print(f"DEBUG: Notes generated successfully")
-                    print(f"DEBUG: Summary preview: {video.summary[:200]}...")
-            else:
-                if settings.DEBUG:
-                    print(f"DEBUG: ERROR - generate_notes_from_transcript returned None or incomplete notes")
-                    print(f"DEBUG: This usually means:")
-                    print(f"DEBUG: 1. AI_API_KEY is not set in .env file")
-                    print(f"DEBUG: 2. Gemini API is failing (check API key validity)")
-                    print(f"DEBUG: 3. Network issues preventing API calls")
-                
-                # Don't save placeholder notes - raise error instead
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to generate notes. Please ensure AI_API_KEY is set correctly in backend configuration. Check backend logs for details."
-                )
-        else:
+        if not transcript or not transcript.strip():
             if settings.DEBUG:
                 print(f"DEBUG: ERROR - No transcript available for video")
                 print(f"DEBUG: Video may not have subtitles/captions enabled")
             
-            # Don't save placeholder notes - raise error instead
+            # Don't create video record - raise error instead
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="This video does not have subtitles or captions available. Please try a different video that has English subtitles enabled."
             )
         
+        if settings.DEBUG:
+            print(f"DEBUG: Calling generate_notes_from_transcript...")
+            print(f"DEBUG: Transcript preview (first 500 chars): {transcript[:500]}")
+        
+        # Generate notes BEFORE creating video record
+        notes = generate_notes_from_transcript(transcript, video_info.get("title", ""))
+        
+        # Validate notes are complete and not placeholder
+        if not notes or not notes.get("summary") or not notes.get("key_points") or not notes.get("bullet_notes"):
+            if settings.DEBUG:
+                print(f"DEBUG: ERROR - generate_notes_from_transcript returned None or incomplete notes")
+                print(f"DEBUG: This usually means:")
+                print(f"DEBUG: 1. AI_API_KEY is not set in .env file")
+                print(f"DEBUG: 2. Gemini API is failing (check API key validity)")
+                print(f"DEBUG: 3. Network issues preventing API calls")
+                print(f"DEBUG: 4. API quota exceeded")
+            
+            # Don't create video record - raise error instead
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate notes. Please ensure AI_API_KEY is set correctly in backend configuration. Check backend logs for details."
+            )
+        
+        # Validate notes are not placeholder
+        summary = notes.get("summary", "")
+        if "contains valuable content" in summary.lower() and "watch the video" in summary.lower():
+            if settings.DEBUG:
+                print(f"DEBUG: WARNING - Received placeholder notes, this should not happen!")
+            # Don't create video record - raise error instead
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="AI service returned invalid notes. Please try again."
+            )
+        
+        # Only create video record AFTER notes are successfully generated
+        if settings.DEBUG:
+            print(f"DEBUG: Notes generated successfully, creating video record...")
+            print(f"DEBUG: Summary preview: {notes.get('summary', '')[:200]}...")
+        
+        video = Video(
+            user_id=user_id,
+            video_id=video_id,
+            video_url=request.video_url,
+            title=video_info.get("title", f"Video {video_id}"),
+            thumbnail_url=video_info.get("thumbnail_url"),
+            duration=video_info.get("duration"),
+            transcript=video_info.get("transcript"),
+            summary=notes.get("summary"),
+            key_points=notes.get("key_points"),
+            bullet_notes=notes.get("bullet_notes")
+        )
+        
+        db.add(video)
         db.commit()
         db.refresh(video)
         
@@ -206,6 +220,7 @@ async def generate_video_notes(
         )
     except HTTPException:
         # Re-raise HTTP exceptions (these are intentional errors with proper messages)
+        # No video record was created, so no cleanup needed
         raise
     except Exception as e:
         import traceback
@@ -214,24 +229,21 @@ async def generate_video_notes(
             print(f"DEBUG: Error generating notes: {str(e)}")
             print(f"DEBUG: Traceback: {error_trace}")
         
-        # Delete the video record if note generation failed (cleanup)
-        try:
-            db.delete(video)
-            db.commit()
-        except Exception as db_error:
-            if settings.DEBUG:
-                print(f"DEBUG: Error deleting video record: {str(db_error)}")
-        
+        # No video record was created (we generate notes first), so no cleanup needed
         # Check for specific error types to provide better error messages
         error_message = str(e).lower()
-        if "permissiondenied" in str(type(e)).lower() or "leaked" in error_message or "permission denied" in error_message:
+        error_type_str = str(type(e)).lower()
+        
+        if "resourceexhausted" in error_type_str or "429" in error_message or "quota" in error_message or "exceeded" in error_message:
+            detail = "API quota exceeded. The free tier quota has been reached. Please wait a few minutes and try again, or upgrade your Google Gemini API plan. Visit https://ai.google.dev/pricing for more information."
+        elif "permissiondenied" in error_type_str or "leaked" in error_message or "permission denied" in error_message:
             detail = "API key is invalid or has been reported as leaked. Please get a new Google Gemini API key from https://makersuite.google.com/app/apikey and update it in backend/app/config.py"
         elif "api key" in error_message or "authentication" in error_message:
             detail = f"API key authentication failed: {str(e)}. Please check your AI_API_KEY in backend configuration."
         else:
             detail = f"Failed to generate notes: {str(e)}. Please check backend logs for details."
         
-        # Raise proper error instead of returning placeholder notes
+        # Raise proper error - no video record was created, so nothing to clean up
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=detail
@@ -244,7 +256,7 @@ async def get_video_notes(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id)
 ):
-    """Get video notes by video ID"""
+    """Get video notes by video ID - only returns videos with complete notes"""
     video = db.query(Video).filter(
         Video.id == video_id,
         Video.user_id == user_id
@@ -254,6 +266,13 @@ async def get_video_notes(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Video not found"
+        )
+    
+    # Check if video has complete notes
+    if not video.summary or not video.key_points or not video.bullet_notes:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Video notes are incomplete. Please regenerate notes for this video."
         )
     
     return VideoResponse.model_validate(video)
@@ -287,12 +306,22 @@ async def get_user_videos(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id)
 ):
-    """Get all videos for the current user"""
+    """Get all videos for the current user - only videos with complete notes"""
+    # Only return videos that have complete notes (summary, key_points, bullet_notes)
     videos = db.query(Video).filter(
-        Video.user_id == user_id
+        Video.user_id == user_id,
+        Video.summary.isnot(None),
+        Video.key_points.isnot(None),
+        Video.bullet_notes.isnot(None)
     ).order_by(Video.created_at.desc()).offset(skip).limit(limit).all()
     
-    total = db.query(Video).filter(Video.user_id == user_id).count()
+    # Count only videos with complete notes
+    total = db.query(Video).filter(
+        Video.user_id == user_id,
+        Video.summary.isnot(None),
+        Video.key_points.isnot(None),
+        Video.bullet_notes.isnot(None)
+    ).count()
     
     return VideoListResponse(
         videos=[VideoResponse.model_validate(v) for v in videos],
@@ -458,4 +487,182 @@ async def get_chat_history(
         messages=[ChatMessageResponse.model_validate(chat) for chat in chats],
         total=total
     )
+
+
+@router.get("/chat/histories", response_model=ChatHistoryListResponse)
+async def get_all_chat_histories(
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    """Get all chat histories grouped by video for the current user - shows videos with notes (ready for chat) or existing chats"""
+    from sqlalchemy import func, desc, or_
+    
+    # Get videos that have complete notes (ready for chat) OR have existing chat messages
+    # This allows users to see videos they've generated notes for and start chatting
+    videos_with_notes = db.query(Video.id).filter(
+        Video.user_id == user_id,
+        Video.summary.isnot(None),
+        Video.key_points.isnot(None),
+        Video.bullet_notes.isnot(None)
+    ).subquery()
+    
+    # Get videos with chat messages
+    videos_with_chats = db.query(
+        Chat.video_id,
+        func.max(Chat.created_at).label('last_message_time'),
+        func.count(Chat.id).label('message_count')
+    ).filter(
+        Chat.user_id == user_id,
+        Chat.is_user_message == True
+    ).group_by(Chat.video_id).subquery()
+    
+    # Get all videos that have notes OR have chats
+    # Use outer join to include videos with notes but no chats yet
+    results = db.query(
+        Video.id,
+        Video.title,
+        Video.thumbnail_url,
+        Video.video_id,
+        Video.created_at,
+        videos_with_chats.c.last_message_time,
+        videos_with_chats.c.message_count
+    ).outerjoin(
+        videos_with_chats, Video.id == videos_with_chats.c.video_id
+    ).filter(
+        Video.user_id == user_id,
+        Video.summary.isnot(None),
+        Video.key_points.isnot(None),
+        Video.bullet_notes.isnot(None)
+    ).order_by(
+        desc(func.coalesce(videos_with_chats.c.last_message_time, Video.created_at))
+    ).offset(skip).limit(limit).all()
+    
+    # Get last message for each video
+    histories = []
+    for result in results:
+        # Get the last user message first, if not available, get last AI response
+        last_user_chat = db.query(Chat).filter(
+            Chat.video_id == result.id,
+            Chat.user_id == user_id,
+            Chat.is_user_message == True
+        ).order_by(Chat.created_at.desc()).first()
+        
+        last_message = None
+        # Use last_message_time from chats if available, otherwise use video creation time
+        last_message_time = result.last_message_time if result.last_message_time else result.created_at
+        
+        if last_user_chat:
+            last_message = last_user_chat.message
+            last_message_time = last_user_chat.created_at
+        else:
+            # Fallback to last AI response if no user message found
+            last_ai_chat = db.query(Chat).filter(
+                Chat.video_id == result.id,
+                Chat.user_id == user_id,
+                Chat.is_user_message == False
+            ).order_by(Chat.created_at.desc()).first()
+            if last_ai_chat:
+                last_message = last_ai_chat.response
+                last_message_time = last_ai_chat.created_at
+        
+        # If no chat messages, set a default message
+        if not last_message:
+            last_message = "Click to start chatting about this video"
+        
+        # Use message_count from subquery, or 0 if no chats
+        message_count = result.message_count if result.message_count else 0
+        
+        histories.append(ChatHistoryItem(
+            video_id=result.id,
+            video_title=result.title,
+            video_thumbnail_url=result.thumbnail_url,
+            last_message=last_message,
+            last_message_time=last_message_time,
+            message_count=message_count,
+            youtube_video_id=result.video_id
+        ))
+    
+    # Get total count - videos with complete notes (ready for chat)
+    total = db.query(Video).filter(
+        Video.user_id == user_id,
+        Video.summary.isnot(None),
+        Video.key_points.isnot(None),
+        Video.bullet_notes.isnot(None)
+    ).count()
+    
+    return ChatHistoryListResponse(
+        histories=histories,
+        total=total
+    )
+
+
+@router.delete("/chat/{chat_id}")
+async def delete_chat_message(
+    chat_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    """Delete a specific chat message"""
+    chat = db.query(Chat).filter(
+        Chat.id == chat_id,
+        Chat.user_id == user_id
+    ).first()
+    
+    if not chat:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Chat message not found"
+        )
+    
+    db.delete(chat)
+    db.commit()
+    
+    return {"message": "Chat message deleted successfully"}
+
+
+@router.delete("/{video_id}/chat")
+async def delete_video_chat_history(
+    video_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    """Delete all chat messages for a specific video"""
+    # Verify video exists and belongs to user
+    video = db.query(Video).filter(
+        Video.id == video_id,
+        Video.user_id == user_id
+    ).first()
+    
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Video not found"
+        )
+    
+    # Delete all chats for this video
+    deleted_count = db.query(Chat).filter(
+        Chat.video_id == video_id,
+        Chat.user_id == user_id
+    ).delete()
+    
+    db.commit()
+    
+    return {"message": f"Deleted {deleted_count} chat message(s) successfully"}
+
+
+@router.delete("/chat/all")
+async def delete_all_chat_history(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    """Delete all chat messages for the current user"""
+    deleted_count = db.query(Chat).filter(
+        Chat.user_id == user_id
+    ).delete()
+    
+    db.commit()
+    
+    return {"message": f"Deleted {deleted_count} chat message(s) successfully"}
 

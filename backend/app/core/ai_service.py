@@ -125,54 +125,28 @@ def generate_notes_with_gemini(transcript: str, video_title: str = "") -> Option
             if settings.DEBUG:
                 print(f"DEBUG: Using full transcript, length: {len(transcript)}")
         
-        # Concise but effective prompt for faster generation
-        prompt = f"""Analyze this YouTube video transcript and create comprehensive notes.
+        # Optimized short prompt for faster generation with better formatting
+        prompt = f"""Create notes from transcript.
 
-Video Title: {video_title}
+Title: {video_title}
+Transcript: {transcript_limited}
 
-TRANSCRIPT:
-{transcript_limited}
-
-Create detailed notes with:
+Output format:
 
 SUMMARY:
-Write 3-4 paragraphs (200-300 words) covering:
-- Main purpose and themes
-- Key messages and takeaways
-- Important examples or demonstrations
-- Practical applications
+[2-3 paragraphs: main purpose, key messages, takeaways]
 
 KEY POINTS:
-List 8-12 key points (each starting with "•"), including:
-- Specific details, numbers, names from the video
-- Important concepts and explanations
-- Tips, warnings, or best practices
-- Action items or recommendations
+• Point 1
+• Point 2
+[8-12 points with specific details]
 
 BULLET NOTES:
-Create 15-25 detailed bullet points (each starting with "•") covering:
-- All main topics and subtopics
-- Step-by-step processes or procedures
-- Examples, case studies, demonstrations
-- Important statistics, data, or measurements
-- Tools, resources, or references mentioned
-- Definitions and terminology
+• Note 1
+• Note 2
+[15-25 notes: topics, steps, examples, data]
 
-Format EXACTLY as:
-SUMMARY:
-[Your summary here]
-
-KEY POINTS:
-• [Point 1]
-• [Point 2]
-[Continue...]
-
-BULLET NOTES:
-• [Note 1]
-• [Note 2]
-[Continue...]
-
-Be specific, accurate, and comprehensive. Use exact details from the transcript."""
+Use exact transcript details. Format cleanly with proper bullets."""
         
         # Generate content
         try:
@@ -253,14 +227,16 @@ Be specific, accurate, and comprehensive. Use exact details from the transcript.
                 error_str = str(api_error).lower()
                 error_type = type(api_error).__name__
                 
-                if "permissiondenied" in error_type.lower() or "permission denied" in error_str or "leaked" in error_str:
+                if "resourceexhausted" in error_type.lower() or "429" in error_str or "quota" in error_str or "exceeded" in error_str:
+                    print("DEBUG: ERROR - API quota exceeded!")
+                    print("DEBUG: ERROR - Free tier quota has been reached. Please wait or upgrade your plan.")
+                    print("DEBUG: ERROR - Visit https://ai.google.dev/pricing for more information.")
+                elif "permissiondenied" in error_type.lower() or "permission denied" in error_str or "leaked" in error_str:
                     print("DEBUG: ERROR - API key is invalid or has been reported as leaked!")
                     print("DEBUG: ERROR - Please get a new API key from: https://makersuite.google.com/app/apikey")
                     print("DEBUG: ERROR - Update AI_API_KEY in backend/app/config.py")
                 elif "api key" in error_str or "authentication" in error_str or "permission" in error_str:
                     print("DEBUG: ERROR - API key issue detected! Check if the API key is valid.")
-                elif "quota" in error_str or "limit" in error_str:
-                    print("DEBUG: ERROR - API quota/limit exceeded!")
                 elif "network" in error_str or "connection" in error_str or "timeout" in error_str:
                     print("DEBUG: ERROR - Network/connection issue!")
             return None

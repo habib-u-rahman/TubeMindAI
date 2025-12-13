@@ -103,10 +103,53 @@ public class NotesActivity extends AppCompatActivity {
         animateCard(keyPointsCard, 150);
         animateCard(bulletNotesCard, 300);
         
+        // Format and display notes with proper styling
+        String formattedSummary = formatSummary(summary);
+        String formattedKeyPoints = formatBulletPoints(keyPoints);
+        String formattedBulletNotes = formatBulletPoints(bulletNotes);
+        
         // Animate text content
-        animateTextView(tvSummary, summary != null ? summary : "No summary available", 200);
-        animateTextView(tvKeyPoints, keyPoints != null ? keyPoints : "No key points available", 350);
-        animateTextView(tvBulletNotes, bulletNotes != null ? bulletNotes : "No notes available", 500);
+        animateTextView(tvSummary, formattedSummary, 200);
+        animateTextView(tvKeyPoints, formattedKeyPoints, 350);
+        animateTextView(tvBulletNotes, formattedBulletNotes, 500);
+    }
+    
+    private String formatSummary(String summary) {
+        if (summary == null || summary.isEmpty()) {
+            return "No summary available";
+        }
+        // Clean up summary - ensure proper paragraph breaks
+        return summary.trim().replaceAll("\n{3,}", "\n\n");
+    }
+    
+    private String formatBulletPoints(String text) {
+        if (text == null || text.isEmpty()) {
+            return "No notes available";
+        }
+        
+        // Ensure all bullet points use consistent formatting
+        String formatted = text.trim();
+        
+        // Replace different bullet styles with consistent bullet (•)
+        formatted = formatted.replaceAll("(?m)^[\\s]*[-*]\\s+", "• ");
+        formatted = formatted.replaceAll("(?m)^[\\s]*\\d+[.)]\\s+", "• ");
+        
+        // Ensure bullet points start with • and have proper spacing
+        formatted = formatted.replaceAll("(?m)^([^•\\n]+)$", "• $1");
+        
+        // Clean up multiple spaces but preserve single spaces
+        formatted = formatted.replaceAll("[ \\t]+", " ");
+        
+        // Ensure proper line breaks - each bullet on new line
+        formatted = formatted.replaceAll("•\\s*([^•\\n]+?)(?=\\n|•|$)", "• $1\n");
+        
+        // Remove extra newlines (max 2 consecutive)
+        formatted = formatted.replaceAll("\\n{3,}", "\n\n");
+        
+        // Clean up any trailing newlines
+        formatted = formatted.trim();
+        
+        return formatted;
     }
     
     private void animateCard(View card, long delay) {
