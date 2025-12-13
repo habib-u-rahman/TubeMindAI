@@ -5,109 +5,146 @@
     android:viewportWidth="200"
     android:viewportHeight="200">
 
-    <!-- Outer Glow Circle -->
+    <!-- Outer Glow Ring -->
     <path
-        android:fillColor="#00D4FF"
-        android:fillAlpha="0.1"
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.12"
         android:pathData="M100,0C44.8,0 0,44.8 0,100s44.8,100 100,100s100,-44.8 100,-100S155.2,0 100,0z" />
     
-    <!-- Main Background Circle -->
+    <!-- Main Background Circle with Shadow Effect -->
     <path
-        android:fillColor="#000000"
-        android:pathData="M100,10C52.3,10 10,52.3 10,100s42.3,90 90,90s90,-42.3 90,-90S147.7,10 100,10z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M100,12C54.8,12 12,54.8 12,100s42.8,88 88,88s88,-42.8 88,-88S145.2,12 100,12z" />
     
-    <!-- Inner Gradient Circle -->
+    <!-- Inner Glow Circle -->
     <path
-        android:fillColor="#00D4FF"
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.08"
+        android:pathData="M100,25C60.6,25 25,60.6 25,100s35.6,75 75,75s75,-35.6 75,-75S139.4,25 100,25z" />
+    
+    <!-- Modern Document Card with Rounded Corners -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M60,45 L140,45 L140,125 L60,125 Z" />
+    
+    <!-- Card Shadow -->
+    <path
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.1"
+        android:pathData="M60,45 L140,45 L140,125 L60,125 Z" />
+    
+    <!-- Elegant Folded Corner -->
+    <path
+        android:fillColor="#E8F4F8"
+        android:pathData="M60,45 L75,45 L60,60 Z" />
+    
+    <!-- Fold Highlight -->
+    <path
+        android:fillColor="#4A9BCF"
         android:fillAlpha="0.15"
-        android:pathData="M100,20C56.6,20 20,56.6 20,100s36.6,80 80,80s80,-36.6 80,-80S143.4,20 100,20z" />
+        android:pathData="M60,45 L73,45 L60,58 Z" />
     
-    <!-- Document/Notes Paper -->
+    <!-- Modern Notes Lines with Better Spacing -->
     <path
-        android:fillColor="#1A1A1A"
-        android:pathData="M55,40 L145,40 L145,130 L55,130 Z" />
-    
-    <!-- Document Folded Corner -->
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.85"
+        android:pathData="M75,62 L135,62 L135,66 L75,66 Z" />
     <path
-        android:fillColor="#0F0F0F"
-        android:pathData="M55,40 L70,40 L55,55 Z" />
-    
-    <!-- Highlight on Fold -->
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.65"
+        android:pathData="M75,76 L130,76 L130,79 L75,79 Z" />
     <path
-        android:fillColor="#7C3AED"
-        android:fillAlpha="0.3"
-        android:pathData="M55,40 L68,40 L55,53 Z" />
-    
-    <!-- Notes Lines (Text Lines) - Using paths instead of stroke -->
-    <path
-        android:fillColor="#00D4FF"
-        android:fillAlpha="0.9"
-        android:pathData="M70,58 L130,58 L130,62 L70,62 Z" />
-    <path
-        android:fillColor="#00D4FF"
-        android:fillAlpha="0.7"
-        android:pathData="M70,73 L125,73 L125,76.5 L70,76.5 Z" />
-    <path
-        android:fillColor="#00D4FF"
-        android:fillAlpha="0.6"
-        android:pathData="M70,88 L120,88 L120,91 L70,91 Z" />
-    <path
-        android:fillColor="#00D4FF"
+        android:fillColor="#4A9BCF"
         android:fillAlpha="0.5"
-        android:pathData="M70,103 L115,103 L115,105.5 L70,105.5 Z" />
-    
-    <!-- YouTube Play Button (Centered) -->
+        android:pathData="M75,90 L125,90 L125,92.5 L75,92.5 Z" />
     <path
-        android:fillColor="#00D4FF"
-        android:pathData="M82,75 L82,100 L102,87.5 Z" />
-    
-    <!-- Play Button Inner Shadow -->
-    <path
-        android:fillColor="#0099CC"
-        android:fillAlpha="0.5"
-        android:pathData="M82,75 L82,100 L102,87.5 Z" />
-    
-    <!-- AI Neural Network Nodes - Using paths for circles -->
-    <path
-        android:fillColor="#7C3AED"
-        android:pathData="M130,50m-5,0a5,5 0 1,1 10,0a5,5 0 1,1 -10,0" />
-    <path
-        android:fillColor="#F59E0B"
-        android:pathData="M150,60m-4,0a4,4 0 1,1 8,0a4,4 0 1,1 -8,0" />
-    <path
-        android:fillColor="#00D4FF"
-        android:pathData="M145,75m-4.5,0a4.5,4.5 0 1,1 9,0a4.5,4.5 0 1,1 -9,0" />
-    
-    <!-- Neural Network Connections -->
-    <path
-        android:fillColor="#7C3AED"
-        android:fillAlpha="0.5"
-        android:pathData="M130,50 L150,60" />
-    <path
-        android:fillColor="#F59E0B"
-        android:fillAlpha="0.5"
-        android:pathData="M150,60 L145,75" />
-    
-    <!-- Bottom Accent Line -->
-    <path
-        android:fillColor="#00D4FF"
-        android:pathData="M50,138.5 L150,138.5 L150,141.5 L50,141.5 Z" />
-    
-    <!-- Corner Decorative Element -->
-    <path
-        android:fillColor="#7C3AED"
-        android:fillAlpha="0.7"
-        android:pathData="M40,40 L55,40 L55,55 L40,55 Z" />
-    
-    <!-- Inner Corner Highlight -->
-    <path
-        android:fillColor="#00D4FF"
+        android:fillColor="#4A9BCF"
         android:fillAlpha="0.4"
-        android:pathData="M42,42 L53,42 L53,53 L42,53 Z" />
+        android:pathData="M75,104 L120,104 L120,106 L75,106 Z" />
     
-    <!-- Top Right Sparkle -->
+    <!-- Modern Play Button with Gradient Effect -->
     <path
-        android:fillColor="#F59E0B"
+        android:fillColor="#4A9BCF"
+        android:pathData="M85,78 L85,103 L105,90.5 Z" />
+    
+    <!-- Play Button Highlight -->
+    <path
+        android:fillColor="#6BB6E8"
+        android:fillAlpha="0.6"
+        android:pathData="M85,78 L85,103 L105,90.5 Z" />
+    
+    <!-- Play Button Shadow -->
+    <path
+        android:fillColor="#3A7BA8"
+        android:fillAlpha="0.3"
+        android:pathData="M87,80 L87,101 L103,90.5 Z" />
+    
+    <!-- AI Brain Icon - Modern Design -->
+    <path
+        android:fillColor="#4682B4"
+        android:pathData="M135,52m-6,0a6,6 0 1,1 12,0a6,6 0 1,1 -12,0" />
+    
+    <!-- AI Node 2 -->
+    <path
+        android:fillColor="#5BA3D0"
+        android:pathData="M155,62m-5,0a5,5 0 1,1 10,0a5,5 0 1,1 -10,0" />
+    
+    <!-- AI Node 3 -->
+    <path
+        android:fillColor="#4A9BCF"
+        android:pathData="M148,78m-5.5,0a5.5,5.5 0 1,1 11,0a5.5,5.5 0 1,1 -11,0" />
+    
+    <!-- Neural Network Connections - Modern Lines -->
+    <path
+        android:fillColor="#4682B4"
+        android:fillAlpha="0.35"
+        android:strokeWidth="2"
+        android:pathData="M135,52 L155,62" />
+    <path
+        android:fillColor="#5BA3D0"
+        android:fillAlpha="0.35"
+        android:strokeWidth="2"
+        android:pathData="M155,62 L148,78" />
+    
+    <!-- Bottom Accent Bar - Modern Design -->
+    <path
+        android:fillColor="#4A9BCF"
+        android:pathData="M50,140 L150,140 L150,144 L50,144 Z" />
+    
+    <!-- Top Left Decorative Element -->
+    <path
+        android:fillColor="#4682B4"
+        android:fillAlpha="0.5"
+        android:pathData="M35,35 L50,35 L50,50 L35,50 Z" />
+    
+    <!-- Top Left Inner Highlight -->
+    <path
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.25"
+        android:pathData="M37,37 L48,37 L48,48 L37,48 Z" />
+    
+    <!-- Top Right Sparkle - More Attractive -->
+    <path
+        android:fillColor="#5BA3D0"
         android:fillAlpha="0.8"
-        android:pathData="M160,30 L162,34 L166,34 L163,37 L165,41 L160,38 L155,41 L157,37 L154,34 L158,34 Z" />
+        android:pathData="M165,25 L167,30 L172,30 L168,34 L170,39 L165,35 L160,39 L162,34 L158,30 L163,30 Z" />
+    
+    <!-- Bottom Right Small Sparkle -->
+    <path
+        android:fillColor="#4682B4"
+        android:fillAlpha="0.6"
+        android:pathData="M155,150 L156,153 L159,153 L157,155 L158,158 L155,156 L152,158 L153,155 L151,153 L154,153 Z" />
+    
+    <!-- Left Side Accent Dot -->
+    <path
+        android:fillColor="#5BA3D0"
+        android:fillAlpha="0.7"
+        android:pathData="M40,100m-4,0a4,4 0 1,1 8,0a4,4 0 1,1 -8,0" />
+    
+    <!-- Right Side Accent Dot -->
+    <path
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.6"
+        android:pathData="M160,100m-4,0a4,4 0 1,1 8,0a4,4 0 1,1 -8,0" />
+
 </vector>

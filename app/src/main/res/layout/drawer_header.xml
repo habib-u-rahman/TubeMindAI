@@ -28,7 +28,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="John Doe"
-        android:textColor="@color/white"
+        android:textColor="@color/text_primary_light"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginBottom="4dp" />
@@ -38,7 +38,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="john.doe@example.com"
-        android:textColor="@color/white"
+        android:textColor="@color/text_primary_light"
         android:textSize="14sp"
         android:alpha="0.9" />
 

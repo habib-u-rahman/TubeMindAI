@@ -81,8 +81,73 @@ public class SavedNotesActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        // Set delete listener
+        notesAdapter.setOnDeleteClickListener((notes, position) -> {
+            deleteNote(notes, position);
+        });
+
         rvSavedNotes.setLayoutManager(new LinearLayoutManager(this));
         rvSavedNotes.setAdapter(notesAdapter);
+    }
+
+    private void deleteNote(NotesModel notes, int position) {
+        // Show confirmation dialog
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Delete Note")
+                .setMessage("Are you sure you want to delete this note? This action cannot be undone.")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    performDelete(notes, position);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void performDelete(NotesModel notes, int position) {
+        String token = prefsManager.getAccessToken();
+        if (token == null || token.isEmpty()) {
+            Toast.makeText(this, "Please login to delete notes", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        showProgressDialog("Deleting note...");
+
+        int videoDbId = Integer.parseInt(notes.getNoteId());
+        String authHeader = "Bearer " + token;
+
+        Call<com.example.tubemindai.api.models.VideoResponse> call = apiService.deleteVideo(authHeader, videoDbId);
+        call.enqueue(new Callback<com.example.tubemindai.api.models.VideoResponse>() {
+            @Override
+            public void onResponse(Call<com.example.tubemindai.api.models.VideoResponse> call, Response<com.example.tubemindai.api.models.VideoResponse> response) {
+                hideProgressDialog();
+
+                if (response.isSuccessful()) {
+                    // Remove from list with animation
+                    notesAdapter.removeItem(position);
+                    Toast.makeText(SavedNotesActivity.this, "Note deleted successfully", Toast.LENGTH_SHORT).show();
+
+                    // Show empty state if list is empty
+                    if (notesList.isEmpty()) {
+                        showEmptyState();
+                    }
+                } else {
+                    // Handle 401 (token expired) - redirect to login
+                    if (com.example.tubemindai.utils.ApiErrorHandler.handleError(SavedNotesActivity.this, response)) {
+                        finish();
+                        return;
+                    }
+
+                    String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.getErrorMessage(response);
+                    Toast.makeText(SavedNotesActivity.this, "Failed to delete note: " + errorMessage, Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<com.example.tubemindai.api.models.VideoResponse> call, Throwable t) {
+                hideProgressDialog();
+                String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.handleNetworkError(t);
+                Toast.makeText(SavedNotesActivity.this, "Error deleting note: " + errorMessage, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void loadSavedNotes() {
@@ -158,7 +223,8 @@ public class SavedNotesActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<VideoListResponse> call, Throwable t) {
                 hideProgressDialog();
-                Toast.makeText(SavedNotesActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.handleNetworkError(t);
+                Toast.makeText(SavedNotesActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                 showEmptyState();
             }
         });

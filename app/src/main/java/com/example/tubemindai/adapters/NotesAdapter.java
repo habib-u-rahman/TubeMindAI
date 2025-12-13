@@ -3,6 +3,7 @@ package com.example.tubemindai.adapters;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -20,14 +21,23 @@ import java.util.List;
 public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesViewHolder> {
     private List<NotesModel> notesList;
     private OnNotesClickListener listener;
+    private OnDeleteClickListener deleteListener;
 
     public interface OnNotesClickListener {
         void onNotesClick(NotesModel notes);
     }
 
+    public interface OnDeleteClickListener {
+        void onDeleteClick(NotesModel notes, int position);
+    }
+
     public NotesAdapter(List<NotesModel> notesList, OnNotesClickListener listener) {
         this.notesList = notesList;
         this.listener = listener;
+    }
+
+    public void setOnDeleteClickListener(OnDeleteClickListener deleteListener) {
+        this.deleteListener = deleteListener;
     }
 
     @NonNull
@@ -50,6 +60,12 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesViewHol
                 listener.onNotesClick(notes);
             }
         });
+
+        holder.btnDelete.setOnClickListener(v -> {
+            if (deleteListener != null) {
+                deleteListener.onDeleteClick(notes, position);
+            }
+        });
     }
 
     @Override
@@ -57,11 +73,20 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesViewHol
         return notesList != null ? notesList.size() : 0;
     }
 
+    public void removeItem(int position) {
+        if (position >= 0 && position < notesList.size()) {
+            notesList.remove(position);
+            notifyItemRemoved(position);
+            notifyItemRangeChanged(position, notesList.size());
+        }
+    }
+
     static class NotesViewHolder extends RecyclerView.ViewHolder {
         CardView cardView;
         TextView tvNoteTitle;
         TextView tvNotePreview;
         TextView tvNoteDate;
+        ImageButton btnDelete;
 
         public NotesViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -69,6 +94,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesViewHol
             tvNoteTitle = itemView.findViewById(R.id.tvNoteTitle);
             tvNotePreview = itemView.findViewById(R.id.tvNotePreview);
             tvNoteDate = itemView.findViewById(R.id.tvNoteDate);
+            btnDelete = itemView.findViewById(R.id.btnDelete);
         }
     }
 }

@@ -222,10 +222,19 @@ async def generate_video_notes(
             if settings.DEBUG:
                 print(f"DEBUG: Error deleting video record: {str(db_error)}")
         
+        # Check for specific error types to provide better error messages
+        error_message = str(e).lower()
+        if "permissiondenied" in str(type(e)).lower() or "leaked" in error_message or "permission denied" in error_message:
+            detail = "API key is invalid or has been reported as leaked. Please get a new Google Gemini API key from https://makersuite.google.com/app/apikey and update it in backend/app/config.py"
+        elif "api key" in error_message or "authentication" in error_message:
+            detail = f"API key authentication failed: {str(e)}. Please check your AI_API_KEY in backend configuration."
+        else:
+            detail = f"Failed to generate notes: {str(e)}. Please check backend logs for details."
+        
         # Raise proper error instead of returning placeholder notes
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate notes: {str(e)}. Please check backend logs and ensure AI_API_KEY is configured correctly."
+            detail=detail
         )
 
 

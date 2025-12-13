@@ -10,6 +10,8 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.tubemindai.R;
 import com.example.tubemindai.models.VideoModel;
 
@@ -45,8 +47,19 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.VideoViewHol
         holder.tvVideoTitle.setText(video.getTitle());
         holder.tvVideoDate.setText(video.getDate());
         
-        // Placeholder for thumbnail - in real app, use Glide/Picasso to load image
-        holder.ivThumbnail.setBackgroundColor(holder.itemView.getContext().getResources().getColor(R.color.primary));
+        // Load thumbnail using Glide
+        if (video.getThumbnailUrl() != null && !video.getThumbnailUrl().isEmpty()) {
+            Glide.with(holder.itemView.getContext())
+                    .load(video.getThumbnailUrl())
+                    .placeholder(R.color.primary) // Placeholder color while loading
+                    .error(R.color.primary) // Error placeholder
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .centerCrop()
+                    .into(holder.ivThumbnail);
+        } else {
+            // No thumbnail URL, use placeholder color
+            holder.ivThumbnail.setBackgroundColor(holder.itemView.getContext().getResources().getColor(R.color.primary));
+        }
         
         holder.cardView.setOnClickListener(v -> {
             if (listener != null) {

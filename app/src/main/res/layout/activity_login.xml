@@ -14,7 +14,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="TubeMind AI"
-        android:textColor="@color/white"
+        android:textColor="@color/text_primary_light"
         android:textSize="36sp"
         android:textStyle="bold"
         android:layout_marginTop="80dp"
@@ -27,7 +27,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="YouTube Notes Generator"
-        android:textColor="@color/white"
+        android:textColor="@color/text_primary_light"
         android:textSize="16sp"
         android:alpha="0.9"
         android:layout_marginTop="8dp"
@@ -43,7 +43,7 @@
         android:layout_marginTop="60dp"
         app:cardCornerRadius="24dp"
         app:cardElevation="8dp"
-        app:cardBackgroundColor="@color/card_background_dark"
+        app:cardBackgroundColor="@color/card_background_light"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvSubtitle">
@@ -58,7 +58,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Welcome Back"
-                android:textColor="@color/text_primary_dark"
+                android:textColor="@color/text_primary_light"
                 android:textSize="28sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp" />
@@ -67,7 +67,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Sign in to continue"
-                android:textColor="@color/text_secondary_dark"
+                android:textColor="@color/text_secondary_light"
                 android:textSize="14sp"
                 android:layout_marginBottom="32dp" />
 
@@ -154,7 +154,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Don't have an account? "
-                    android:textColor="@color/text_secondary_dark"
+                    android:textColor="@color/text_secondary_light"
                     android:textSize="14sp" />
 
                 <TextView

@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/gradient_background_dark"
+    android:background="@drawable/gradient_background"
     tools:context=".SplashActivity">
 
     <!-- Animated Logo Container -->
@@ -48,7 +48,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="YouTube Notes Generator"
-            android:textColor="@color/text_secondary_dark"
+            android:textColor="@color/text_secondary_light"
             android:textSize="17sp"
             android:layout_marginTop="10dp"
             android:alpha="0"

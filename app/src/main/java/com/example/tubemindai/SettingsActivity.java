@@ -31,9 +31,17 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_settings);
-
+        
+        // Apply saved dark mode preference before setting content view
         sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        boolean isDarkMode = sharedPreferences.getBoolean(KEY_DARK_MODE, false);
+        if (isDarkMode) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        }
+        
+        setContentView(R.layout.activity_settings);
 
         initViews();
         setupToolbar();

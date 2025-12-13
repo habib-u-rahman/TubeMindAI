@@ -5,59 +5,91 @@
     android:viewportWidth="200"
     android:viewportHeight="200">
 
-    <!-- Background Circle with Gradient Effect -->
+    <!-- Background Circle with Modern Look -->
     <path
-        android:fillColor="#000000"
+        android:fillColor="#FFFFFF"
         android:pathData="M100,0C44.8,0 0,44.8 0,100s44.8,100 100,100s100,-44.8 100,-100S155.2,0 100,0z" />
     
-    <!-- Outer Glow Circle -->
+    <!-- Outer Glow Ring -->
     <path
-        android:fillColor="#00D4FF"
-        android:fillAlpha="0.2"
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.18"
         android:pathData="M100,0C44.8,0 0,44.8 0,100s44.8,100 100,100s100,-44.8 100,-100S155.2,0 100,0z" />
     
-    <!-- Notes/Document Background -->
+    <!-- Modern Notes/Document Card -->
     <path
-        android:fillColor="#1A1A1A"
-        android:pathData="M60,40 L140,40 L140,120 L60,120 Z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M58,38 L142,38 L142,118 L58,118 Z" />
     
-    <!-- Notes Lines -->
+    <!-- Card Shadow for Depth -->
     <path
-        android:fillColor="#00D4FF"
-        android:fillAlpha="0.6"
-        android:pathData="M70,60 L130,60" />
-    <path
-        android:fillColor="#00D4FF"
-        android:fillAlpha="0.4"
-        android:pathData="M70,75 L120,75" />
-    <path
-        android:fillColor="#00D4FF"
-        android:fillAlpha="0.4"
-        android:pathData="M70,90 L110,90" />
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.12"
+        android:pathData="M58,38 L142,38 L142,118 L58,118 Z" />
     
-    <!-- Play Button Triangle (YouTube Style) -->
+    <!-- Elegant Fold Corner -->
     <path
-        android:fillColor="#00D4FF"
-        android:pathData="M85,80 L85,100 L105,90 Z" />
+        android:fillColor="#E8F4F8"
+        android:pathData="M58,38 L73,38 L58,53 Z" />
     
-    <!-- AI Sparkle/Star Effect -->
+    <!-- Fold Highlight -->
     <path
-        android:fillColor="#7C3AED"
-        android:pathData="M150,50 L152,56 L158,56 L153,60 L155,66 L150,62 L145,66 L147,60 L142,56 L148,56 Z" />
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.18"
+        android:pathData="M58,38 L71,38 L58,51 Z" />
     
+    <!-- Modern Notes Lines -->
     <path
-        android:fillColor="#F59E0B"
-        android:pathData="M50,50 L51,53 L54,53 L52,55 L53,58 L50,56 L47,58 L48,55 L46,53 L49,53 Z" />
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.75"
+        android:pathData="M73,58 L133,58 L133,61.5 L73,61.5 Z" />
+    <path
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.55"
+        android:pathData="M73,73 L128,73 L128,75.5 L73,75.5 Z" />
+    <path
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.45"
+        android:pathData="M73,88 L123,88 L123,90 L73,90 Z" />
     
-    <!-- Bottom Accent Line -->
+    <!-- Modern Play Button -->
     <path
-        android:fillColor="#00D4FF"
-        android:pathData="M50,140 L150,140" />
+        android:fillColor="#4A9BCF"
+        android:pathData="M83,78 L83,98 L103,88 Z" />
+    
+    <!-- Play Button Highlight -->
+    <path
+        android:fillColor="#6BB6E8"
+        android:fillAlpha="0.55"
+        android:pathData="M83,78 L83,98 L103,88 Z" />
+    
+    <!-- AI Sparkle/Star - More Attractive -->
+    <path
+        android:fillColor="#4682B4"
+        android:fillAlpha="0.85"
+        android:pathData="M148,48 L150,54 L156,54 L151,58 L153,64 L148,60 L143,64 L145,58 L140,54 L146,54 Z" />
+    
+    <!-- Small Sparkle -->
+    <path
+        android:fillColor="#5BA3D0"
+        android:fillAlpha="0.7"
+        android:pathData="M52,48 L53,51 L56,51 L54,53 L55,56 L52,54 L49,56 L50,53 L48,51 L51,51 Z" />
+    
+    <!-- Bottom Accent Bar -->
+    <path
+        android:fillColor="#4A9BCF"
+        android:pathData="M48,138 L152,138 L152,142 L48,142 Z" />
     
     <!-- Corner Decoration -->
     <path
-        android:fillColor="#7C3AED"
+        android:fillColor="#4682B4"
         android:fillAlpha="0.5"
-        android:pathData="M40,40 L50,40 L50,50 L40,50 Z" />
-</vector>
+        android:pathData="M38,38 L50,38 L50,50 L38,50 Z" />
+    
+    <!-- Inner Corner Highlight -->
+    <path
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.3"
+        android:pathData="M40,40 L48,40 L48,48 L40,48 Z" />
 
+</vector>

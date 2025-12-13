@@ -31,7 +31,7 @@
                 android:elevation="0dp"
                 app:navigationIcon="@drawable/ic_home"
                 app:title="TubeMind AI"
-                app:titleTextColor="@color/white" />
+                app:titleTextColor="@color/text_primary_light" />
         </com.google.android.material.appbar.AppBarLayout>
 
         <!-- Scrollable Content -->
@@ -56,7 +56,7 @@
                     android:layout_height="wrap_content"
                     app:cardCornerRadius="20dp"
                     app:cardElevation="8dp"
-                    app:cardBackgroundColor="@color/card_background_dark"
+                    app:cardBackgroundColor="@color/card_background_light"
                     android:layout_marginBottom="24dp">
 
                     <LinearLayout
@@ -69,7 +69,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Paste YouTube Video URL"
-                            android:textColor="@color/text_primary_dark"
+                            android:textColor="@color/text_primary_light"
                             android:textSize="18sp"
                             android:textStyle="bold"
                             android:layout_marginBottom="16dp" />
@@ -114,7 +114,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Recent Videos"
-                    android:textColor="@color/white"
+                    android:textColor="@color/text_primary_light"
                     android:textSize="22sp"
                     android:textStyle="bold"
                     android:layout_marginBottom="16dp" />

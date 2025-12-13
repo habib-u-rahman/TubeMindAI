@@ -178,7 +178,10 @@ public class ChatActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ChatMessageResponse> call, Throwable t) {
                 hideProgressDialog();
-                Toast.makeText(ChatActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                
+                // Handle network errors with user-friendly message
+                String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.handleNetworkError(t);
+                Toast.makeText(ChatActivity.this, errorMessage, Toast.LENGTH_LONG).show();
             }
         });
     }

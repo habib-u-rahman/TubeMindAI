@@ -5,80 +5,101 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Document/Notes Paper -->
+    <!-- Modern Document Card -->
     <path
-        android:fillColor="#1A1A1A"
-        android:pathData="M24,20 L84,20 L84,70 L24,70 Z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M22,18 L86,18 L86,68 L22,68 Z" />
     
-    <!-- Document Folded Corner -->
+    <!-- Card Shadow -->
     <path
-        android:fillColor="#0F0F0F"
-        android:pathData="M24,20 L36,20 L24,32 Z" />
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.1"
+        android:pathData="M22,18 L86,18 L86,68 L22,68 Z" />
     
-    <!-- Highlight on Fold -->
+    <!-- Elegant Folded Corner -->
     <path
-        android:fillColor="#7C3AED"
-        android:fillAlpha="0.3"
-        android:pathData="M24,20 L34,20 L24,30 Z" />
+        android:fillColor="#E8F4F8"
+        android:pathData="M22,18 L34,18 L22,30 Z" />
     
-    <!-- Notes Lines -->
+    <!-- Fold Highlight -->
     <path
-        android:fillColor="#00D4FF"
-        android:fillAlpha="0.9"
-        android:pathData="M30,32 L78,32 L78,35 L30,35 Z" />
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.15"
+        android:pathData="M22,18 L32,18 L22,28 Z" />
+    
+    <!-- Modern Notes Lines -->
     <path
-        android:fillColor="#00D4FF"
-        android:fillAlpha="0.7"
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.8"
+        android:pathData="M30,30 L78,30 L78,33 L30,33 Z" />
+    <path
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.6"
         android:pathData="M30,40 L75,40 L75,42.5 L30,42.5 Z" />
     <path
-        android:fillColor="#00D4FF"
-        android:fillAlpha="0.6"
-        android:pathData="M30,48 L72,48 L72,50 L30,50 Z" />
-    <path
-        android:fillColor="#00D4FF"
+        android:fillColor="#4A9BCF"
         android:fillAlpha="0.5"
-        android:pathData="M30,56 L69,56 L69,58 L30,58 Z" />
-    
-    <!-- YouTube Play Button -->
+        android:pathData="M30,50 L72,50 L72,52 L30,52 Z" />
     <path
-        android:fillColor="#00D4FF"
-        android:pathData="M38,42 L38,58 L50,50 Z" />
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.4"
+        android:pathData="M30,60 L69,60 L69,61.5 L30,61.5 Z" />
+    
+    <!-- Modern Play Button -->
+    <path
+        android:fillColor="#4A9BCF"
+        android:pathData="M38,40 L38,56 L50,48 Z" />
+    
+    <!-- Play Button Highlight -->
+    <path
+        android:fillColor="#6BB6E8"
+        android:fillAlpha="0.5"
+        android:pathData="M38,40 L38,56 L50,48 Z" />
     
     <!-- AI Neural Network Nodes -->
     <path
-        android:fillColor="#7C3AED"
-        android:pathData="M70,28m-3,0a3,3 0 1,1 6,0a3,3 0 1,1 -6,0" />
+        android:fillColor="#4682B4"
+        android:pathData="M70,26m-3.5,0a3.5,3.5 0 1,1 7,0a3.5,3.5 0 1,1 -7,0" />
     <path
-        android:fillColor="#F59E0B"
-        android:pathData="M82,32m-2.5,0a2.5,2.5 0 1,1 5,0a2.5,2.5 0 1,1 -5,0" />
+        android:fillColor="#5BA3D0"
+        android:pathData="M82,30m-3,0a3,3 0 1,1 6,0a3,3 0 1,1 -6,0" />
     <path
-        android:fillColor="#00D4FF"
-        android:pathData="M78,40m-2.5,0a2.5,2.5 0 1,1 5,0a2.5,2.5 0 1,1 -5,0" />
+        android:fillColor="#4A9BCF"
+        android:pathData="M78,38m-3,0a3,3 0 1,1 6,0a3,3 0 1,1 -6,0" />
     
     <!-- Neural Network Connections -->
     <path
-        android:fillColor="#7C3AED"
-        android:fillAlpha="0.5"
-        android:pathData="M70,28 L82,32" />
+        android:fillColor="#4682B4"
+        android:fillAlpha="0.35"
+        android:strokeWidth="1.5"
+        android:pathData="M70,26 L82,30" />
     <path
-        android:fillColor="#F59E0B"
-        android:fillAlpha="0.5"
-        android:pathData="M82,32 L78,40" />
+        android:fillColor="#5BA3D0"
+        android:fillAlpha="0.35"
+        android:strokeWidth="1.5"
+        android:pathData="M82,30 L78,38" />
     
-    <!-- Bottom Accent Line -->
+    <!-- Bottom Accent Bar -->
     <path
-        android:fillColor="#00D4FF"
-        android:pathData="M20,76 L88,76 L88,79 L20,79 Z" />
+        android:fillColor="#4A9BCF"
+        android:pathData="M18,74 L90,74 L90,77 L18,77 Z" />
     
     <!-- Corner Decorative Element -->
     <path
-        android:fillColor="#7C3AED"
-        android:fillAlpha="0.7"
-        android:pathData="M16,16 L28,16 L28,28 L16,28 Z" />
+        android:fillColor="#4682B4"
+        android:fillAlpha="0.5"
+        android:pathData="M14,14 L26,14 L26,26 L14,26 Z" />
     
     <!-- Inner Corner Highlight -->
     <path
-        android:fillColor="#00D4FF"
-        android:fillAlpha="0.4"
-        android:pathData="M18,18 L26,18 L26,26 L18,26 Z" />
+        android:fillColor="#4A9BCF"
+        android:fillAlpha="0.25"
+        android:pathData="M16,16 L24,16 L24,24 L16,24 Z" />
+    
+    <!-- Top Right Sparkle -->
+    <path
+        android:fillColor="#5BA3D0"
+        android:fillAlpha="0.7"
+        android:pathData="M92,12 L93,15 L96,15 L94,17 L95,20 L92,18 L89,20 L90,17 L88,15 L91,15 Z" />
+
 </vector>

@@ -125,115 +125,54 @@ def generate_notes_with_gemini(transcript: str, video_title: str = "") -> Option
             if settings.DEBUG:
                 print(f"DEBUG: Using full transcript, length: {len(transcript)}")
         
-        # Create enhanced prompt for superior note generation quality
-        prompt = f"""You are an expert educational content analyst and note-taker. Your task is to analyze this YouTube video transcript and create exceptionally detailed, comprehensive, and well-structured notes that serve as a complete reference for the video content.
+        # Concise but effective prompt for faster generation
+        prompt = f"""Analyze this YouTube video transcript and create comprehensive notes.
 
 Video Title: {video_title}
 
 TRANSCRIPT:
 {transcript_limited}
 
-ANALYSIS INSTRUCTIONS:
-1. **Comprehensive Reading**: Read the ENTIRE transcript multiple times mentally to ensure you capture every nuance, detail, and piece of information.
-
-2. **Information Extraction**: Extract and document:
-   - Every main topic and all subtopics discussed
-   - Complete step-by-step processes, tutorials, or procedures
-   - All examples, case studies, demonstrations, and real-world applications
-   - Every tip, trick, best practice, warning, or caution mentioned
-   - All numerical data: statistics, percentages, measurements, quantities, dates, timeframes
-   - All names: people, places, companies, products, tools, software, websites mentioned
-   - All definitions, explanations of concepts, terminology, and jargon
-   - All comparisons, contrasts, pros/cons, advantages/disadvantages
-   - All resources: books, articles, websites, tools, links, references
-   - All action items, recommendations, next steps, or follow-up tasks
-   - All questions raised and answers provided
-   - All demonstrations, code snippets, or practical examples
-   - All visual descriptions or important visual elements mentioned
-
-3. **Quality Standards**:
-   - Be extremely specific - use exact numbers, names, and details from the transcript
-   - Avoid generic statements - replace with specific information from the video
-   - Maintain context - explain why something is important, not just what it is
-   - Preserve relationships - show how concepts connect to each other
-   - Include nuances - capture subtle points, exceptions, and edge cases
-   - Be exhaustive - it's better to have comprehensive notes than to miss critical information
-
-REQUIRED OUTPUT FORMAT:
+Create detailed notes with:
 
 SUMMARY:
-Write a detailed, multi-paragraph summary (4-5 paragraphs, minimum 300 words) that:
-- Provides a complete overview of the video's purpose, scope, and main themes
-- Summarizes the key messages, takeaways, and learning objectives
-- Mentions all major topics, concepts, and themes covered
-- Includes important context, background information, or prerequisites
-- Highlights the most valuable insights, unique perspectives, or key revelations
-- References specific examples, case studies, or demonstrations when mentioned
-- Explains the practical applications or real-world relevance
-- Concludes with the main outcomes or next steps if discussed
+Write 3-4 paragraphs (200-300 words) covering:
+- Main purpose and themes
+- Key messages and takeaways
+- Important examples or demonstrations
+- Practical applications
 
 KEY POINTS:
-List 10-15 comprehensive key points, each on a new line starting with "•". Each point must:
-- Be a complete, standalone statement that makes sense independently
-- Include specific details: numbers, names, examples, or data from the video
-- Be informative and actionable - provide value to the reader
-- Cover different aspects of the video content (don't repeat similar points)
-- Be detailed enough to understand the concept without watching the video
-- Include context or explanation when necessary
-- Mention specific examples, tools, resources, or references when discussed
-- Capture critical information, warnings, or important notes
-- Be written in clear, professional language
+List 8-12 key points (each starting with "•"), including:
+- Specific details, numbers, names from the video
+- Important concepts and explanations
+- Tips, warnings, or best practices
+- Action items or recommendations
 
 BULLET NOTES:
-Create an extensive, well-organized collection of detailed bullet notes (minimum 20-30 bullets) that:
-- Cover EVERY important topic, subtopic, and concept from the video comprehensively
-- Are organized logically by topic or theme (group related information together)
-- Each bullet starts with "•" and is on a new line
-- Include specific details, examples, explanations, and context for each point
-- Capture all step-by-step processes, procedures, or methodologies in detail
-- Document all examples, case studies, demonstrations, or practical applications
-- Include all tips, tricks, best practices, warnings, common mistakes, or important notes
-- Preserve all numerical data, statistics, percentages, measurements, or quantities
-- Document all names: people, places, companies, products, tools, software, websites
-- Include all definitions, terminology, concepts, and jargon with explanations
-- Capture all comparisons, contrasts, pros/cons, or relationships between concepts
-- Document all resources, references, links, books, articles, or tools mentioned
-- Include all action items, recommendations, next steps, or follow-up tasks
-- Be detailed enough that someone can fully understand the video content without watching it
-- Use clear, descriptive language - prioritize completeness and clarity
+Create 15-25 detailed bullet points (each starting with "•") covering:
+- All main topics and subtopics
+- Step-by-step processes or procedures
+- Examples, case studies, demonstrations
+- Important statistics, data, or measurements
+- Tools, resources, or references mentioned
+- Definitions and terminology
 
-CRITICAL QUALITY REQUIREMENTS:
-- **Completeness**: Capture ALL important information - don't skip or summarize away details
-- **Specificity**: Use exact numbers, names, and details from the transcript - avoid vague statements
-- **Depth**: Provide enough detail and context for each point to be meaningful
-- **Organization**: Group related information logically while maintaining comprehensive coverage
-- **Clarity**: Write in clear, professional language that's easy to understand
-- **Value**: Make the notes so comprehensive that they serve as a complete reference document
-- **Accuracy**: Ensure all information accurately reflects what was said in the video
-
-Format your response EXACTLY as follows (no deviations):
+Format EXACTLY as:
 SUMMARY:
-[Your detailed 4-5 paragraph summary here - minimum 300 words with all important information]
+[Your summary here]
 
 KEY POINTS:
-• [Detailed point 1 with specific information and context]
-• [Detailed point 2 with specific information and context]
-• [Detailed point 3 with specific information and context]
-• [Continue with 7-12 more comprehensive, detailed points]
+• [Point 1]
+• [Point 2]
+[Continue...]
 
 BULLET NOTES:
-• [Comprehensive note 1 with full details and context]
-• [Comprehensive note 2 with full details and context]
-• [Comprehensive note 3 with full details and context]
-• [Continue with 17-27 more detailed notes covering ALL topics from the video]
+• [Note 1]
+• [Note 2]
+[Continue...]
 
-FINAL REMINDERS:
-- Quality over quantity, but ensure comprehensive coverage of ALL important content
-- Be extremely thorough - capture every significant piece of information from the transcript
-- Use specific details, numbers, names, and examples - avoid generic statements
-- Make these notes valuable enough that someone can fully understand the video without watching it
-- Organize information clearly but be exhaustive in your coverage
-- Prioritize completeness, accuracy, and detail in every section"""
+Be specific, accurate, and comprehensive. Use exact details from the transcript."""
         
         # Generate content
         try:
@@ -312,7 +251,13 @@ FINAL REMINDERS:
                 
                 # Check for specific error types
                 error_str = str(api_error).lower()
-                if "api key" in error_str or "authentication" in error_str or "permission" in error_str:
+                error_type = type(api_error).__name__
+                
+                if "permissiondenied" in error_type.lower() or "permission denied" in error_str or "leaked" in error_str:
+                    print("DEBUG: ERROR - API key is invalid or has been reported as leaked!")
+                    print("DEBUG: ERROR - Please get a new API key from: https://makersuite.google.com/app/apikey")
+                    print("DEBUG: ERROR - Update AI_API_KEY in backend/app/config.py")
+                elif "api key" in error_str or "authentication" in error_str or "permission" in error_str:
                     print("DEBUG: ERROR - API key issue detected! Check if the API key is valid.")
                 elif "quota" in error_str or "limit" in error_str:
                     print("DEBUG: ERROR - API quota/limit exceeded!")

@@ -37,7 +37,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Chat History Item"
-                android:textColor="@color/text_primary_dark"
+                android:textColor="@color/text_primary_light"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="4dp" />
@@ -47,7 +47,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="2 hours ago"
-                android:textColor="@color/text_secondary_dark"
+                android:textColor="@color/text_secondary_light"
                 android:textSize="12sp" />
         </LinearLayout>
 

@@ -38,7 +38,7 @@
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp"
-                app:cardBackgroundColor="@color/card_background_dark"
+                app:cardBackgroundColor="@color/card_background_light"
                 android:layout_marginBottom="16dp">
 
                 <LinearLayout
@@ -75,7 +75,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="John Doe"
-                            android:textColor="@color/text_primary_dark"
+                            android:textColor="@color/text_primary_light"
                             android:textSize="20sp"
                             android:textStyle="bold"
                             android:layout_marginBottom="4dp" />
@@ -85,7 +85,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="john.doe@example.com"
-                            android:textColor="@color/text_secondary_dark"
+                            android:textColor="@color/text_secondary_light"
                             android:textSize="14sp" />
                     </LinearLayout>
 
@@ -93,7 +93,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@android:drawable/ic_menu_more"
-                        android:tint="@color/text_secondary_dark" />
+                        android:tint="@color/text_secondary_light" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -113,7 +113,7 @@
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp"
-                app:cardBackgroundColor="@color/card_background_dark"
+                app:cardBackgroundColor="@color/card_background_light"
                 android:layout_marginBottom="16dp">
 
                 <LinearLayout
@@ -145,14 +145,14 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Edit Profile"
-                            android:textColor="@color/text_primary_dark"
+                            android:textColor="@color/text_primary_light"
                             android:textSize="16sp" />
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:src="@android:drawable/ic_menu_more"
-                            android:tint="@color/text_secondary_dark" />
+                            android:tint="@color/text_secondary_light" />
                     </LinearLayout>
 
                     <View
@@ -185,14 +185,14 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Change Password"
-                            android:textColor="@color/text_primary_dark"
+                            android:textColor="@color/text_primary_light"
                             android:textSize="16sp" />
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:src="@android:drawable/ic_menu_more"
-                            android:tint="@color/text_secondary_dark" />
+                            android:tint="@color/text_secondary_light" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -213,7 +213,7 @@
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp"
-                app:cardBackgroundColor="@color/card_background_dark"
+                app:cardBackgroundColor="@color/card_background_light"
                 android:layout_marginBottom="16dp">
 
                 <LinearLayout
@@ -241,7 +241,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Dark Mode"
-                            android:textColor="@color/text_primary_dark"
+                            android:textColor="@color/text_primary_light"
                             android:textSize="16sp" />
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
@@ -278,7 +278,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Notifications"
-                            android:textColor="@color/text_primary_dark"
+                            android:textColor="@color/text_primary_light"
                             android:textSize="16sp" />
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
@@ -308,7 +308,7 @@
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp"
-                app:cardBackgroundColor="@color/card_background_dark"
+                app:cardBackgroundColor="@color/card_background_light"
                 android:layout_marginBottom="16dp">
 
                 <LinearLayout
@@ -321,7 +321,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="App Version"
-                        android:textColor="@color/text_secondary_dark"
+                        android:textColor="@color/text_secondary_light"
                         android:textSize="14sp"
                         android:layout_marginBottom="4dp" />
 
@@ -329,7 +329,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="1.0.0"
-                        android:textColor="@color/text_primary_dark"
+                        android:textColor="@color/text_primary_light"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="16dp" />
@@ -338,7 +338,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="About TubeMind AI"
-                        android:textColor="@color/text_secondary_dark"
+                        android:textColor="@color/text_secondary_light"
                         android:textSize="14sp"
                         android:layout_marginBottom="4dp" />
 
@@ -346,7 +346,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="TubeMind AI helps you generate intelligent notes from YouTube videos using advanced AI technology."
-                        android:textColor="@color/text_primary_dark"
+                        android:textColor="@color/text_primary_light"
                         android:textSize="14sp"
                         android:lineSpacingExtra="4dp" />
                 </LinearLayout>

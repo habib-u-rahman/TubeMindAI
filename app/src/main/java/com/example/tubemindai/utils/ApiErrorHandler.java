@@ -60,15 +60,42 @@ public class ApiErrorHandler {
         try {
             if (response.errorBody() != null) {
                 String errorBody = response.errorBody().string();
+                android.util.Log.e("ApiErrorHandler", "Error response body: " + errorBody);
+                
                 Gson gson = new Gson();
-                com.example.tubemindai.api.models.ApiError error = gson.fromJson(errorBody, com.example.tubemindai.api.models.ApiError.class);
-                if (error.getMessage() != null && !error.getMessage().isEmpty()) {
-                    return error.getMessage();
-                } else if (error.getDetail() != null && !error.getDetail().isEmpty()) {
-                    return error.getDetail();
+                try {
+                    com.example.tubemindai.api.models.ApiError error = gson.fromJson(errorBody, com.example.tubemindai.api.models.ApiError.class);
+                    if (error != null) {
+                        if (error.getMessage() != null && !error.getMessage().isEmpty()) {
+                            return error.getMessage();
+                        } else if (error.getDetail() != null && !error.getDetail().isEmpty()) {
+                            return error.getDetail();
+                        }
+                    }
+                } catch (Exception parseError) {
+                    // If parsing fails, try to extract detail from raw JSON
+                    if (errorBody.contains("\"detail\"")) {
+                        try {
+                            int detailStart = errorBody.indexOf("\"detail\"") + 9;
+                            int detailEnd = errorBody.indexOf("\"", detailStart);
+                            if (detailEnd > detailStart) {
+                                String detail = errorBody.substring(detailStart, detailEnd);
+                                if (!detail.isEmpty()) {
+                                    return detail;
+                                }
+                            }
+                        } catch (Exception e) {
+                            // Ignore
+                        }
+                    }
+                    // Return raw error body if parsing fails
+                    if (errorBody.length() < 200) {
+                        return errorBody;
+                    }
                 }
             }
         } catch (Exception e) {
+            android.util.Log.e("ApiErrorHandler", "Error parsing error response: " + e.getMessage());
             e.printStackTrace();
         }
         
@@ -79,10 +106,12 @@ public class ApiErrorHandler {
             return "Access forbidden";
         } else if (response.code() == 404) {
             return "Resource not found";
+        } else if (response.code() == 400) {
+            return "Bad request. Please check your input.";
         } else if (response.code() >= 500) {
-            return "Server error. Please try again later.";
+            return "Server error (Code: " + response.code() + "). Please check backend logs.";
         } else {
-            return "Request failed. Please try again.";
+            return "Request failed (Code: " + response.code() + "). Please try again.";
         }
     }
 }

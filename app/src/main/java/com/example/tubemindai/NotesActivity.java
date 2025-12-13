@@ -93,9 +93,53 @@ public class NotesActivity extends AppCompatActivity {
     }
 
     private void displayNotes(String summary, String keyPoints, String bulletNotes) {
-        tvSummary.setText(summary != null ? summary : "No summary available");
-        tvKeyPoints.setText(keyPoints != null ? keyPoints : "No key points available");
-        tvBulletNotes.setText(bulletNotes != null ? bulletNotes : "No notes available");
+        // Animate the appearance of notes with fade-in and slide-up effects
+        View summaryCard = findViewById(R.id.summaryCard);
+        View keyPointsCard = findViewById(R.id.keyPointsCard);
+        View bulletNotesCard = findViewById(R.id.bulletNotesCard);
+        
+        // Animate cards
+        animateCard(summaryCard, 0);
+        animateCard(keyPointsCard, 150);
+        animateCard(bulletNotesCard, 300);
+        
+        // Animate text content
+        animateTextView(tvSummary, summary != null ? summary : "No summary available", 200);
+        animateTextView(tvKeyPoints, keyPoints != null ? keyPoints : "No key points available", 350);
+        animateTextView(tvBulletNotes, bulletNotes != null ? bulletNotes : "No notes available", 500);
+    }
+    
+    private void animateCard(View card, long delay) {
+        if (card != null) {
+            card.setAlpha(0f);
+            card.setScaleX(0.95f);
+            card.setScaleY(0.95f);
+            card.setTranslationY(20f);
+            
+            card.animate()
+                    .alpha(1f)
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .translationY(0f)
+                    .setDuration(400)
+                    .setStartDelay(delay)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                    .start();
+        }
+    }
+    
+    private void animateTextView(TextView textView, String text, long delay) {
+        textView.setAlpha(0f);
+        textView.setTranslationY(20f);
+        textView.setText(text);
+        
+        textView.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(400)
+                .setStartDelay(delay)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                .start();
     }
 
     private void loadNotesFromAPI(int videoDbId) {
@@ -149,7 +193,8 @@ public class NotesActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<VideoResponse> call, Throwable t) {
                 hideProgressDialog();
-                Toast.makeText(NotesActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.handleNetworkError(t);
+                Toast.makeText(NotesActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                 tvSummary.setText("Network error. Please check your connection.");
             }
         });
@@ -210,7 +255,8 @@ public class NotesActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<VideoResponse> call, Throwable t) {
                 hideProgressDialog();
-                Toast.makeText(NotesActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.handleNetworkError(t);
+                Toast.makeText(NotesActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                 tvSummary.setText("Network error. Please check your connection.");
             }
         });
@@ -295,7 +341,8 @@ public class NotesActivity extends AppCompatActivity {
             public void onFailure(Call<VideoResponse> call, Throwable t) {
                 btnSaveToHistory.setEnabled(true);
                 btnSaveToHistory.setText("Save to History");
-                Toast.makeText(NotesActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.handleNetworkError(t);
+                Toast.makeText(NotesActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
             }
         });
     }

@@ -4,7 +4,7 @@
         <!-- Primary Colors -->
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryVariant">@color/primary_dark</item>
-        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorOnPrimary">@color/white</item>
         
         <!-- Secondary Colors -->
         <item name="colorSecondary">@color/secondary</item>
@@ -12,18 +12,18 @@
         
         <!-- Accent Colors -->
         <item name="colorTertiary">@color/accent</item>
-        <item name="colorOnTertiary">@color/black</item>
+        <item name="colorOnTertiary">@color/white</item>
         
-        <!-- Surface Colors - Dark Theme -->
-        <item name="android:colorBackground">@color/background_dark</item>
-        <item name="colorSurface">@color/surface_dark</item>
-        <item name="colorOnSurface">@color/text_primary_dark</item>
-        <item name="colorOnSurfaceVariant">@color/text_secondary_dark</item>
+        <!-- Surface Colors - Modern Light Theme -->
+        <item name="android:colorBackground">@color/background_light</item>
+        <item name="colorSurface">@color/surface_light</item>
+        <item name="colorOnSurface">@color/text_primary_light</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary_light</item>
         
         <!-- Status and Navigation Bar -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightStatusBar">true</item>
         
         <!-- Card View -->
         <item name="cardViewStyle">@style/CardViewStyle</item>
@@ -33,8 +33,8 @@
     
     <!-- Custom CardView Style -->
     <style name="CardViewStyle" parent="CardView">
-        <item name="cardCornerRadius">16dp</item>
-        <item name="cardElevation">4dp</item>
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">2dp</item>
         <item name="cardBackgroundColor">@color/card_background_light</item>
     </style>
 </resources>

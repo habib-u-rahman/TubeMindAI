@@ -183,14 +183,23 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         // Add Bearer token
         String authHeader = "Bearer " + accessToken;
 
+        // Log API call for debugging
+        android.util.Log.d("HomeActivity", "Calling generateVideoNotes API");
+        android.util.Log.d("HomeActivity", "Video URL: " + videoUrl);
+        android.util.Log.d("HomeActivity", "Token present: " + (accessToken != null && !accessToken.isEmpty()));
+        
         Call<VideoGenerateResponse> call = apiService.generateVideoNotes(authHeader, request);
         call.enqueue(new Callback<VideoGenerateResponse>() {
             @Override
             public void onResponse(Call<VideoGenerateResponse> call, Response<VideoGenerateResponse> response) {
                 btnGenerateNotes.setEnabled(true);
                 btnGenerateNotes.setText("Generate Notes");
+                
+                android.util.Log.d("HomeActivity", "API Response Code: " + response.code());
+                android.util.Log.d("HomeActivity", "Response Successful: " + response.isSuccessful());
 
                 if (response.isSuccessful() && response.body() != null) {
+                    android.util.Log.d("HomeActivity", "Notes generated successfully!");
                     VideoGenerateResponse videoResponse = response.body();
                     
                     Toast.makeText(HomeActivity.this, videoResponse.getMessage(), Toast.LENGTH_SHORT).show();
@@ -208,6 +217,9 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
                     
                     // Clear input
                     etVideoUrl.setText("");
+                    
+                    // Reload recent videos to show the new one (FIFO - automatically limits to 4)
+                    loadRecentVideos();
                 } else {
                     // Handle 401 (token expired) - redirect to login
                     if (com.example.tubemindai.utils.ApiErrorHandler.handleError(HomeActivity.this, response)) {
@@ -215,9 +227,12 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
                         return;
                     }
                     
-                    // Handle other errors
+                    // Handle other errors - show detailed error message
                     String errorMessage = com.example.tubemindai.utils.ApiErrorHandler.getErrorMessage(response);
-                    Toast.makeText(HomeActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                    Toast.makeText(HomeActivity.this, "Failed to generate notes: " + errorMessage, Toast.LENGTH_LONG).show();
+                    
+                    // Log error for debugging
+                    android.util.Log.e("HomeActivity", "Note generation failed: " + errorMessage);
                 }
             }
 
@@ -245,7 +260,8 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         ApiService apiService = ApiClient.getApiService();
         String authHeader = "Bearer " + accessToken;
 
-        Call<com.example.tubemindai.api.models.VideoListResponse> call = apiService.getUserVideos(authHeader, 0, 10);
+        // Get only the 4 most recent videos (FIFO - First In First Out)
+        Call<com.example.tubemindai.api.models.VideoListResponse> call = apiService.getUserVideos(authHeader, 0, 4);
         call.enqueue(new Callback<com.example.tubemindai.api.models.VideoListResponse>() {
             @Override
             public void onResponse(Call<com.example.tubemindai.api.models.VideoListResponse> call, Response<com.example.tubemindai.api.models.VideoListResponse> response) {
@@ -253,7 +269,12 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
                     com.example.tubemindai.api.models.VideoListResponse videoListResponse = response.body();
                     
                     videoList.clear();
-                    for (com.example.tubemindai.api.models.VideoResponse video : videoListResponse.getVideos()) {
+                    List<com.example.tubemindai.api.models.VideoResponse> videos = videoListResponse.getVideos();
+                    
+                    // Limit to 4 videos maximum (FIFO - most recent first, oldest removed automatically)
+                    int maxVideos = Math.min(videos.size(), 4);
+                    for (int i = 0; i < maxVideos; i++) {
+                        com.example.tubemindai.api.models.VideoResponse video = videos.get(i);
                         // Convert API response to VideoModel
                         String duration = video.getDuration() != null ? video.getDuration() : "";
                         String timeAgo = formatTimeAgo(video.getCreatedAt());
