@@ -50,6 +50,7 @@ class Token(BaseModel):
     user_id: int
     email: str
     name: str
+    is_admin: Optional[bool] = False
 
 
 # OTP Schemas

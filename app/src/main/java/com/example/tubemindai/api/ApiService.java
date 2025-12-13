@@ -26,6 +26,7 @@ import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
@@ -145,6 +146,53 @@ public interface ApiService {
     @DELETE("api/video/chat/all")
     Call<DeleteResponse> deleteAllChatHistory(
         @Header("Authorization") String token
+    );
+
+    // ========== ADMIN ENDPOINTS ==========
+    
+    // Admin Login
+    @POST("api/admin/login")
+    Call<LoginResponse> adminLogin(@Body LoginRequest request);
+    
+    // Admin Dashboard Stats
+    @GET("api/admin/dashboard/stats")
+    Call<com.example.tubemindai.api.models.AdminStatsResponse> getAdminStats(
+        @Header("Authorization") String token
+    );
+    
+    // Get All Users
+    @GET("api/admin/users")
+    Call<com.example.tubemindai.api.models.AdminUsersResponse> getAllUsers(
+        @Header("Authorization") String token,
+        @Query("skip") int skip,
+        @Query("limit") int limit,
+        @Query("search") String search,
+        @Query("is_active") Boolean isActive,
+        @Query("is_verified") Boolean isVerified
+    );
+    
+    // Activate/Deactivate User
+    @PUT("api/admin/users/{user_id}/activate")
+    Call<com.example.tubemindai.api.models.AdminUserActionResponse> activateUser(
+        @Header("Authorization") String token,
+        @Path("user_id") int userId
+    );
+    
+    // Get All Videos (Admin)
+    @GET("api/admin/videos")
+    Call<com.example.tubemindai.api.models.AdminVideosResponse> getAllVideos(
+        @Header("Authorization") String token,
+        @Query("skip") int skip,
+        @Query("limit") int limit,
+        @Query("search") String search,
+        @Query("user_id") Integer userId
+    );
+    
+    // Delete Video (Admin)
+    @DELETE("api/admin/videos/{video_id}")
+    Call<DeleteResponse> deleteVideoAdmin(
+        @Header("Authorization") String token,
+        @Path("video_id") int videoId
     );
 }
 

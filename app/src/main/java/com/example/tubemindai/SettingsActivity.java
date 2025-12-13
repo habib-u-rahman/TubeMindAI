@@ -132,6 +132,12 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
+        // Admin Panel
+        findViewById(R.id.btnAdminPanel).setOnClickListener(v -> {
+            Intent intent = new Intent(SettingsActivity.this, AdminLoginActivity.class);
+            startActivity(intent);
+        });
+
         // Logout
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
             performLogout();

@@ -6,6 +6,7 @@ public class LoginResponse {
     private int user_id;
     private String email;
     private String name;
+    private boolean is_admin;
 
     public String getAccessToken() {
         return access_token;
@@ -45,6 +46,14 @@ public class LoginResponse {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public boolean isAdmin() {
+        return is_admin;
+    }
+
+    public void setAdmin(boolean is_admin) {
+        this.is_admin = is_admin;
     }
 }
 

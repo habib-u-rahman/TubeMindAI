@@ -57,8 +57,9 @@ async def health_check():
 
 
 # Import and include routers
-from app.api import auth, video
+from app.api import auth, video, admin
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(video.router, prefix="/api/video", tags=["Video Notes"])
+app.include_router(admin.router, prefix="/api", tags=["Admin"])
 

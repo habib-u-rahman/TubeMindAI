@@ -79,5 +79,24 @@ public class SharedPrefsManager {
         editor.remove("reset_token");
         editor.apply();
     }
+
+    // Alias methods for compatibility
+    public void saveToken(String token) {
+        saveAccessToken(token);
+    }
+
+    public void saveUserData(String name, String email, int userId) {
+        saveUserInfo(userId, email, name);
+    }
+
+    // Admin mode
+    public void setAdminMode(boolean isAdmin) {
+        editor.putBoolean("is_admin_mode", isAdmin);
+        editor.apply();
+    }
+
+    public boolean isAdminMode() {
+        return prefs.getBoolean("is_admin_mode", false);
+    }
 }
 

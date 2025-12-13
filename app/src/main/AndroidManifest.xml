@@ -81,6 +81,26 @@
         <activity
             android:name=".SettingsActivity"
             android:exported="false" />
+
+        <!-- Admin Login Activity -->
+        <activity
+            android:name=".AdminLoginActivity"
+            android:exported="false" />
+
+        <!-- Admin Dashboard Activity -->
+        <activity
+            android:name=".AdminDashboardActivity"
+            android:exported="false" />
+
+        <!-- Admin User Management Activity -->
+        <activity
+            android:name=".AdminUserManagementActivity"
+            android:exported="false" />
+
+        <!-- Admin Video Management Activity -->
+        <activity
+            android:name=".AdminVideoManagementActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
