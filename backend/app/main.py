@@ -12,7 +12,7 @@ from app.middleware.error_handler import (
 from app.middleware.json_cleaner import JSONCleanerMiddleware
 
 # Import all models to ensure they're registered
-from app.models import User, OTP, Video, Note, Chat
+from app.models import User, OTP, Video, Note, Chat, PDF, PDFChat
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -57,9 +57,10 @@ async def health_check():
 
 
 # Import and include routers
-from app.api import auth, video, admin
+from app.api import auth, video, admin, pdf
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(video.router, prefix="/api/video", tags=["Video Notes"])
+app.include_router(pdf.router, prefix="/api/pdf", tags=["PDF Notes"])
 app.include_router(admin.router, prefix="/api", tags=["Admin"])
 

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/gradient_background">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/primary"
+            app:title="Welcome to TubeMind AI"
+            app:titleTextColor="@color/white" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <!-- Icon -->
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/ic_notes"
+            android:backgroundTint="@color/primary"
+            android:padding="24dp"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Introduction Text -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Transform your learning with AI-powered notes"
+            android:textColor="@color/text_primary_light"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Choose how you want to get started"
+            android:textColor="@color/text_secondary_light"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:layout_marginBottom="48dp" />
+
+        <!-- YouTube Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnYouTube"
+            android:layout_width="match_parent"
+            android:layout_height="70dp"
+            android:text="YouTube Video Notes"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.02"
+            app:cornerRadius="20dp"
+            app:backgroundTint="@color/primary"
+            app:icon="@drawable/ic_youtube"
+            app:iconGravity="textStart"
+            app:iconSize="28dp"
+            app:iconTint="@color/white"
+            android:elevation="8dp"
+            android:layout_marginBottom="20dp" />
+
+        <!-- PDF Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPDF"
+            android:layout_width="match_parent"
+            android:layout_height="70dp"
+            android:text="PDF Document Notes"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.02"
+            app:cornerRadius="20dp"
+            app:backgroundTint="@color/primary_light"
+            app:icon="@drawable/ic_notes"
+            app:iconGravity="textStart"
+            app:iconSize="28dp"
+            android:elevation="8dp" />
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

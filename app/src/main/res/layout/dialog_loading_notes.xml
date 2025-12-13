@@ -1,40 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="320dp"
+    android:layout_width="340dp"
     android:layout_height="wrap_content"
-    app:cardCornerRadius="24dp"
-    app:cardElevation="8dp"
+    app:cardCornerRadius="32dp"
+    app:cardElevation="20dp"
     app:cardBackgroundColor="@color/card_background_light">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="32dp"
+        android:padding="40dp"
         android:gravity="center">
 
-        <!-- Animated Icon/Logo -->
-        <ImageView
-            android:id="@+id/ivLoadingIcon"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:src="@drawable/ic_notes"
-            android:backgroundTint="@color/primary"
-            android:padding="20dp"
-            android:layout_marginBottom="24dp" />
+        <!-- Animated Progress Ring -->
+        <FrameLayout
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginBottom="32dp">
 
-        <!-- Progress Indicator -->
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:id="@+id/progressIndicator"
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:indeterminate="true"
-            app:indicatorColor="@color/primary"
-            app:trackColor="@color/surface_dark"
-            app:indicatorSize="64dp"
-            app:trackThickness="4dp"
-            android:layout_marginBottom="24dp" />
+            <!-- Outer Ring -->
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/progressIndicator"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:indeterminate="true"
+                app:indicatorColor="@color/primary"
+                app:trackColor="@color/surface_dark"
+                app:indicatorSize="120dp"
+                app:trackThickness="8dp" />
+
+            <!-- Center Icon -->
+            <ImageView
+                android:id="@+id/ivLoadingIcon"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:src="@drawable/ic_notes"
+                android:backgroundTint="@color/primary"
+                android:padding="18dp"
+                android:layout_gravity="center" />
+        </FrameLayout>
 
         <!-- Title -->
         <TextView
@@ -43,9 +49,9 @@
             android:layout_height="wrap_content"
             android:text="Generating Notes"
             android:textColor="@color/text_primary_light"
-            android:textSize="20sp"
+            android:textSize="22sp"
             android:textStyle="bold"
-            android:layout_marginBottom="12dp" />
+            android:layout_marginBottom="16dp" />
 
         <!-- Status Message -->
         <TextView
@@ -54,22 +60,41 @@
             android:layout_height="wrap_content"
             android:text="Preparing your notes..."
             android:textColor="@color/text_secondary_light"
-            android:textSize="14sp"
+            android:textSize="15sp"
             android:gravity="center"
             android:maxLines="2"
-            android:ellipsize="end" />
+            android:ellipsize="end"
+            android:lineSpacingExtra="4dp" />
 
-        <!-- Dots Animation -->
-        <TextView
-            android:id="@+id/tvLoadingDots"
+        <!-- Animated Dots -->
+        <LinearLayout
+            android:id="@+id/llDots"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text=""
-            android:textColor="@color/primary"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp" />
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="20dp">
+
+            <View
+                android:id="@+id/dot1"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:background="@drawable/dot_background"
+                android:layout_marginEnd="8dp" />
+
+            <View
+                android:id="@+id/dot2"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:background="@drawable/dot_background"
+                android:layout_marginEnd="8dp" />
+
+            <View
+                android:id="@+id/dot3"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:background="@drawable/dot_background" />
+        </LinearLayout>
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>
-

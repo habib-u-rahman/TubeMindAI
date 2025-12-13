@@ -25,10 +25,13 @@ import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
+import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
+import okhttp3.MultipartBody;
 
 public interface ApiService {
     
@@ -148,7 +151,87 @@ public interface ApiService {
         @Header("Authorization") String token
     );
 
+    // ========== PDF ENDPOINTS ==========
+    
+    // Upload PDF
+    @Multipart
+    @POST("api/pdf/upload")
+    Call<com.example.tubemindai.api.models.PDFUploadResponse> uploadPDF(
+        @Header("Authorization") String token,
+        @Part MultipartBody.Part file
+    );
+    
+    // Generate PDF Notes
+    @POST("api/pdf/{pdf_id}/generate")
+    Call<com.example.tubemindai.api.models.PDFGenerateResponse> generatePDFNotes(
+        @Header("Authorization") String token,
+        @Path("pdf_id") int pdfId
+    );
+    
+    // Get PDF Notes by ID
+    @GET("api/pdf/{pdf_id}")
+    Call<com.example.tubemindai.api.models.PDFResponse> getPDFNotes(
+        @Header("Authorization") String token,
+        @Path("pdf_id") int pdfId
+    );
+    
+    // Get User's PDFs
+    @GET("api/pdf/")
+    Call<com.example.tubemindai.api.models.PDFListResponse> getUserPDFs(
+        @Header("Authorization") String token,
+        @Query("skip") int skip,
+        @Query("limit") int limit
+    );
+    
+    // Send PDF Chat Message
+    @POST("api/pdf/{pdf_id}/chat")
+    Call<com.example.tubemindai.api.models.PDFChatMessageResponse> sendPDFChatMessage(
+        @Header("Authorization") String token,
+        @Path("pdf_id") int pdfId,
+        @Body com.example.tubemindai.api.models.PDFChatMessageRequest request
+    );
+    
+    // Get PDF Chat History
+    @GET("api/pdf/{pdf_id}/chat")
+    Call<com.example.tubemindai.api.models.PDFChatHistoryResponse> getPDFChatHistory(
+        @Header("Authorization") String token,
+        @Path("pdf_id") int pdfId,
+        @Query("skip") int skip,
+        @Query("limit") int limit
+    );
+    
+    // Get All PDF Chat Histories
+    @GET("api/pdf/chat/histories")
+    Call<com.example.tubemindai.api.models.PDFChatHistoryListResponse> getAllPDFChatHistories(
+        @Header("Authorization") String token,
+        @Query("skip") int skip,
+        @Query("limit") int limit
+    );
+    
+    // Delete PDF
+    @DELETE("api/pdf/{pdf_id}")
+    Call<DeleteResponse> deletePDF(
+        @Header("Authorization") String token,
+        @Path("pdf_id") int pdfId
+    );
+
     // ========== ADMIN ENDPOINTS ==========
+    
+    // Admin PDF Management
+    @GET("api/admin/pdfs")
+    Call<com.example.tubemindai.api.models.AdminPDFsResponse> getAllPDFs(
+        @Header("Authorization") String token,
+        @Query("skip") int skip,
+        @Query("limit") int limit,
+        @Query("search") String search,
+        @Query("user_id") Integer userId
+    );
+    
+    @DELETE("api/admin/pdfs/{pdf_id}")
+    Call<DeleteResponse> deletePDFAdmin(
+        @Header("Authorization") String token,
+        @Path("pdf_id") int pdfId
+    );
     
     // Admin Login
     @POST("api/admin/login")

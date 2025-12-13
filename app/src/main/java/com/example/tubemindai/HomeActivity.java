@@ -55,17 +55,16 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
     private NavigationView navigationView;
     private MaterialToolbar toolbar;
     private TextInputEditText etVideoUrl;
-    private MaterialButton btnGenerateNotes;
+    private MaterialButton btnGenerateNotes, btnUploadPDF;
     private RecyclerView rvRecentVideos;
+    private androidx.cardview.widget.CardView cardPDF;
+    private boolean fromYouTubeOption = false;
     private VideoAdapter videoAdapter;
     private List<VideoModel> videoList;
     private Dialog loadingDialog;
     private Handler loadingHandler;
-    private Handler dotsHandler;
     private Runnable loadingRunnable;
-    private Runnable dotsRunnable;
     private int loadingStep = 0;
-    private int dotIndex = 0;
     private String[] loadingMessages = {
         "Fetching video information...",
         "Extracting transcript...",
@@ -74,7 +73,6 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         "Creating key points...",
         "Finalizing notes..."
     };
-    private String[] dots = {"", ".", "..", "..."};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,6 +89,9 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
             return;
         }
         
+        // Check if coming from YouTube option
+        fromYouTubeOption = getIntent().getBooleanExtra("from_youtube_option", false);
+        
         setContentView(R.layout.activity_home);
 
         initViews();
@@ -100,6 +101,11 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         setupClickListeners();
         loadUserData();
         loadRecentVideos();
+        
+        // Hide PDF card if coming from YouTube option
+        if (fromYouTubeOption && cardPDF != null) {
+            cardPDF.setVisibility(View.GONE);
+        }
     }
 
     private void initViews() {
@@ -108,6 +114,8 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         toolbar = findViewById(R.id.toolbar);
         etVideoUrl = findViewById(R.id.etVideoUrl);
         btnGenerateNotes = findViewById(R.id.btnGenerateNotes);
+        btnUploadPDF = findViewById(R.id.btnUploadPDF);
+        cardPDF = findViewById(R.id.cardPDF);
         rvRecentVideos = findViewById(R.id.rvRecentVideos);
     }
 
@@ -175,6 +183,10 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
 
     private void setupClickListeners() {
         btnGenerateNotes.setOnClickListener(v -> generateNotes());
+        btnUploadPDF.setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, PDFUploadActivity.class);
+            startActivity(intent);
+        });
     }
 
     private void generateNotes() {
@@ -359,7 +371,11 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         int id = item.getItemId();
 
         if (id == R.id.nav_home) {
-            // Already on home
+            // Already on home - refresh and show PDF option
+            fromYouTubeOption = false;
+            if (cardPDF != null) {
+                cardPDF.setVisibility(View.VISIBLE);
+            }
             drawerLayout.closeDrawer(GravityCompat.START);
         } else if (id == R.id.nav_saved_notes) {
             Intent intent = new Intent(HomeActivity.this, SavedNotesActivity.class);
@@ -367,6 +383,10 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
             drawerLayout.closeDrawer(GravityCompat.START);
         } else if (id == R.id.nav_chat_history) {
             Intent intent = new Intent(HomeActivity.this, ChatHistoryActivity.class);
+            startActivity(intent);
+            drawerLayout.closeDrawer(GravityCompat.START);
+        } else if (id == R.id.nav_pdf_history) {
+            Intent intent = new Intent(HomeActivity.this, PDFHistoryActivity.class);
             startActivity(intent);
             drawerLayout.closeDrawer(GravityCompat.START);
         } else if (id == R.id.nav_settings) {
@@ -401,7 +421,14 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START);
         } else {
-            super.onBackPressed();
+            // If coming from YouTube option, go back to IntroActivity
+            if (fromYouTubeOption) {
+                Intent intent = new Intent(HomeActivity.this, IntroActivity.class);
+                startActivity(intent);
+                finish();
+            } else {
+                super.onBackPressed();
+            }
         }
     }
 
@@ -418,26 +445,32 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         // Get views
         ImageView ivIcon = loadingDialog.findViewById(R.id.ivLoadingIcon);
         TextView tvMessage = loadingDialog.findViewById(R.id.tvLoadingMessage);
-        TextView tvDots = loadingDialog.findViewById(R.id.tvLoadingDots);
+        TextView tvTitle = loadingDialog.findViewById(R.id.tvLoadingTitle);
+        View dot1 = loadingDialog.findViewById(R.id.dot1);
+        View dot2 = loadingDialog.findViewById(R.id.dot2);
+        View dot3 = loadingDialog.findViewById(R.id.dot3);
 
-        // Start icon rotation animation
+        // Start icon pulse animation
         if (ivIcon != null) {
-            RotateAnimation rotate = new RotateAnimation(
-                0, 360,
-                Animation.RELATIVE_TO_SELF, 0.5f,
-                Animation.RELATIVE_TO_SELF, 0.5f
-            );
-            rotate.setDuration(2000);
-            rotate.setRepeatCount(Animation.INFINITE);
-            rotate.setInterpolator(new android.view.animation.LinearInterpolator());
-            ivIcon.startAnimation(rotate);
+            android.animation.ObjectAnimator scaleX = android.animation.ObjectAnimator.ofFloat(ivIcon, "scaleX", 1.0f, 1.2f, 1.0f);
+            android.animation.ObjectAnimator scaleY = android.animation.ObjectAnimator.ofFloat(ivIcon, "scaleY", 1.0f, 1.2f, 1.0f);
+            scaleX.setDuration(1500);
+            scaleY.setDuration(1500);
+            scaleX.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+            scaleY.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+            android.animation.AnimatorSet pulseAnim = new android.animation.AnimatorSet();
+            pulseAnim.playTogether(scaleX, scaleY);
+            pulseAnim.start();
         }
 
         // Reset loading step
         loadingStep = 0;
         
-        // Start message rotation
-        startLoadingMessageAnimation(tvMessage, tvDots);
+        // Start message animation
+        startLoadingMessageAnimation(tvMessage, tvTitle);
+        
+        // Start dots animation
+        animateDots(dot1, dot2, dot3);
 
         // Show dialog with fade in animation
         loadingDialog.show();
@@ -447,7 +480,7 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
-    private void startLoadingMessageAnimation(TextView tvMessage, TextView tvDots) {
+    private void startLoadingMessageAnimation(TextView tvMessage, TextView tvTitle) {
         if (loadingHandler == null) {
             loadingHandler = new Handler(Looper.getMainLooper());
         }
@@ -467,53 +500,48 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
                         loadingStep = (loadingStep + 1) % loadingMessages.length;
                     }
 
-                    // Animate dots
-                    animateDots(tvDots);
-
-                    // Schedule next update (every 2 seconds)
-                    loadingHandler.postDelayed(this, 2000);
+                    // Schedule next update (every 2.5 seconds)
+                    loadingHandler.postDelayed(this, 2500);
                 }
             }
         };
 
         // Start immediately
-        loadingRunnable.run();
+        if (tvMessage != null && loadingMessages.length > 0) {
+            tvMessage.setText(loadingMessages[0]);
+        }
+        loadingHandler.postDelayed(loadingRunnable, 2500);
     }
 
-    private void animateDots(TextView tvDots) {
-        if (tvDots == null) return;
+    private void animateDots(View dot1, View dot2, View dot3) {
+        if (dot1 == null || dot2 == null || dot3 == null) return;
 
-        // Cancel previous dots animation if exists
-        if (dotsHandler != null && dotsRunnable != null) {
-            dotsHandler.removeCallbacks(dotsRunnable);
-        }
-
-        if (dotsHandler == null) {
-            dotsHandler = new Handler(Looper.getMainLooper());
-        }
-
-        // Animate dots: . -> .. -> ... -> (empty) -> repeat
-        dotsRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (loadingDialog != null && loadingDialog.isShowing() && tvDots != null) {
-                    tvDots.setText(dots[dotIndex]);
-                    dotIndex = (dotIndex + 1) % dots.length;
-                    dotsHandler.postDelayed(this, 500);
-                }
-            }
-        };
-        dotIndex = 0;
-        dotsHandler.post(dotsRunnable);
+        // Create sequential bounce animation for dots
+        android.animation.ObjectAnimator anim1 = android.animation.ObjectAnimator.ofFloat(dot1, "alpha", 0.3f, 1.0f, 0.3f);
+        android.animation.ObjectAnimator anim2 = android.animation.ObjectAnimator.ofFloat(dot2, "alpha", 0.3f, 1.0f, 0.3f);
+        android.animation.ObjectAnimator anim3 = android.animation.ObjectAnimator.ofFloat(dot3, "alpha", 0.3f, 1.0f, 0.3f);
+        
+        anim1.setDuration(600);
+        anim2.setDuration(600);
+        anim3.setDuration(600);
+        
+        anim1.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+        anim2.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+        anim3.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+        
+        anim1.setStartDelay(0);
+        anim2.setStartDelay(200);
+        anim3.setStartDelay(400);
+        
+        anim1.start();
+        anim2.start();
+        anim3.start();
     }
 
     private void hideLoadingDialog() {
         // Stop all animations
         if (loadingHandler != null && loadingRunnable != null) {
             loadingHandler.removeCallbacks(loadingRunnable);
-        }
-        if (dotsHandler != null && dotsRunnable != null) {
-            dotsHandler.removeCallbacks(dotsRunnable);
         }
 
         if (loadingDialog != null && loadingDialog.isShowing()) {
@@ -522,6 +550,14 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
             if (ivIcon != null) {
                 ivIcon.clearAnimation();
             }
+
+            // Stop dots animation
+            View dot1 = loadingDialog.findViewById(R.id.dot1);
+            View dot2 = loadingDialog.findViewById(R.id.dot2);
+            View dot3 = loadingDialog.findViewById(R.id.dot3);
+            if (dot1 != null) dot1.clearAnimation();
+            if (dot2 != null) dot2.clearAnimation();
+            if (dot3 != null) dot3.clearAnimation();
 
             // Fade out animation
             if (loadingDialog.getWindow() != null) {
@@ -544,9 +580,6 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         hideLoadingDialog();
         if (loadingHandler != null && loadingRunnable != null) {
             loadingHandler.removeCallbacks(loadingRunnable);
-        }
-        if (dotsHandler != null && dotsRunnable != null) {
-            dotsHandler.removeCallbacks(dotsRunnable);
         }
     }
 }

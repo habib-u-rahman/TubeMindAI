@@ -5,7 +5,7 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 
 from app.database import get_db
-from app.models import User, Video, Chat
+from app.models import User, Video, Chat, PDF, PDFChat
 from app.core.security import verify_password, create_access_token
 from app.api.video import get_current_user_id
 from app.schemas.auth import UserLogin, Token
@@ -115,6 +115,23 @@ async def get_dashboard_stats(
         func.date(Chat.created_at) == func.current_date()
     ).scalar()
     
+    # Total PDFs
+    total_pdfs = db.query(func.count(PDF.id)).scalar()
+    pdfs_with_notes = db.query(func.count(PDF.id)).filter(
+        PDF.summary.isnot(None),
+        PDF.key_points.isnot(None),
+        PDF.bullet_notes.isnot(None)
+    ).scalar()
+    pdfs_today = db.query(func.count(PDF.id)).filter(
+        func.date(PDF.created_at) == func.current_date()
+    ).scalar()
+    
+    # Total PDF chats
+    total_pdf_chats = db.query(func.count(PDFChat.id)).scalar()
+    pdf_chats_today = db.query(func.count(PDFChat.id)).filter(
+        func.date(PDFChat.created_at) == func.current_date()
+    ).scalar()
+    
     # Recent activity (last 7 days)
     seven_days_ago = datetime.now() - timedelta(days=7)
     users_last_7_days = db.query(func.count(User.id)).filter(
@@ -122,6 +139,9 @@ async def get_dashboard_stats(
     ).scalar()
     videos_last_7_days = db.query(func.count(Video.id)).filter(
         Video.created_at >= seven_days_ago
+    ).scalar()
+    pdfs_last_7_days = db.query(func.count(PDF.id)).filter(
+        PDF.created_at >= seven_days_ago
     ).scalar()
     
     return {
@@ -141,6 +161,16 @@ async def get_dashboard_stats(
         "chats": {
             "total": total_chats,
             "new_today": chats_today
+        },
+        "pdfs": {
+            "total": total_pdfs,
+            "with_notes": pdfs_with_notes,
+            "new_today": pdfs_today,
+            "new_last_7_days": pdfs_last_7_days
+        },
+        "pdf_chats": {
+            "total": total_pdf_chats,
+            "new_today": pdf_chats_today
         }
     }
 
@@ -312,5 +342,89 @@ async def delete_video(
     return {
         "message": "Video deleted successfully",
         "video_id": video_id
+    }
+
+
+@router.get("/pdfs")
+async def get_all_pdfs(
+    skip: int = 0,
+    limit: int = 50,
+    search: Optional[str] = None,
+    user_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    admin_id: int = Depends(get_current_admin_user_id)
+):
+    """Get all PDFs with filters"""
+    query = db.query(PDF)
+    
+    # Apply filters
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(PDF.file_name.ilike(search_term))
+    
+    if user_id:
+        query = query.filter(PDF.user_id == user_id)
+    
+    # Get total count
+    total = query.count()
+    
+    # Get PDFs
+    pdfs = query.order_by(desc(PDF.created_at)).offset(skip).limit(limit).all()
+    
+    # Format response
+    pdfs_list = []
+    for pdf in pdfs:
+        # Get user info
+        user = db.query(User).filter(User.id == pdf.user_id).first()
+        # Count chats
+        chat_count = db.query(func.count(PDFChat.id)).filter(PDFChat.pdf_id == pdf.id).scalar()
+        
+        pdfs_list.append({
+            "id": pdf.id,
+            "file_name": pdf.file_name,
+            "file_size": pdf.file_size,
+            "page_count": pdf.page_count,
+            "user_id": pdf.user_id,
+            "user_name": user.name if user else "Unknown",
+            "user_email": user.email if user else "Unknown",
+            "has_notes": pdf.summary is not None and pdf.key_points is not None and pdf.bullet_notes is not None,
+            "chat_count": chat_count,
+            "created_at": pdf.created_at.isoformat() if pdf.created_at else None
+        })
+    
+    return {
+        "pdfs": pdfs_list,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
+
+@router.delete("/pdfs/{pdf_id}")
+async def delete_pdf_admin(
+    pdf_id: int,
+    db: Session = Depends(get_db),
+    admin_id: int = Depends(get_current_admin_user_id)
+):
+    """Delete a PDF and all associated data"""
+    pdf = db.query(PDF).filter(PDF.id == pdf_id).first()
+    if not pdf:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="PDF not found"
+        )
+    
+    # Delete file from disk
+    from app.core.pdf_service import delete_pdf_file
+    if pdf.file_path:
+        delete_pdf_file(pdf.file_path)
+    
+    # Delete PDF (cascade will delete chats)
+    db.delete(pdf)
+    db.commit()
+    
+    return {
+        "message": "PDF deleted successfully",
+        "pdf_id": pdf_id
     }
 

@@ -28,13 +28,14 @@ public class AdminDashboardActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     
     // Stats Cards
-    private CardView cardUsers, cardVideos, cardChats;
+    private CardView cardUsers, cardVideos, cardChats, cardPDFs;
     private TextView tvTotalUsers, tvActiveUsers, tvNewUsersToday;
     private TextView tvTotalVideos, tvVideosWithNotes, tvNewVideosToday;
     private TextView tvTotalChats, tvNewChatsToday;
+    private TextView tvTotalPDFs, tvPDFsWithNotes, tvNewPDFsToday;
     
     // Navigation Cards
-    private CardView cardManageUsers, cardManageVideos;
+    private CardView cardManageUsers, cardManageVideos, cardManagePDFs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,9 +68,14 @@ public class AdminDashboardActivity extends AppCompatActivity {
         tvTotalChats = findViewById(R.id.tvTotalChats);
         tvNewChatsToday = findViewById(R.id.tvNewChatsToday);
         
+        tvTotalPDFs = findViewById(R.id.tvTotalPDFs);
+        tvPDFsWithNotes = findViewById(R.id.tvPDFsWithNotes);
+        tvNewPDFsToday = findViewById(R.id.tvNewPDFsToday);
+        
         // Navigation cards
         cardManageUsers = findViewById(R.id.cardManageUsers);
         cardManageVideos = findViewById(R.id.cardManageVideos);
+        cardManagePDFs = findViewById(R.id.cardManagePDFs);
     }
 
     private void setupToolbar() {
@@ -88,6 +94,11 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
         cardManageVideos.setOnClickListener(v -> {
             Intent intent = new Intent(AdminDashboardActivity.this, AdminVideoManagementActivity.class);
+            startActivity(intent);
+        });
+
+        cardManagePDFs.setOnClickListener(v -> {
+            Intent intent = new Intent(AdminDashboardActivity.this, AdminPDFManagementActivity.class);
             startActivity(intent);
         });
     }
@@ -161,6 +172,13 @@ public class AdminDashboardActivity extends AppCompatActivity {
         if (stats.getChats() != null) {
             tvTotalChats.setText(String.valueOf(stats.getChats().getTotal()));
             tvNewChatsToday.setText(String.valueOf(stats.getChats().getNewToday()));
+        }
+
+        // PDFs stats
+        if (stats.getPdfs() != null) {
+            tvTotalPDFs.setText(String.valueOf(stats.getPdfs().getTotal()));
+            tvPDFsWithNotes.setText(String.valueOf(stats.getPdfs().getWithNotes()));
+            tvNewPDFsToday.setText(String.valueOf(stats.getPdfs().getNewToday()));
         }
     }
 

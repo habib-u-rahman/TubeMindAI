@@ -142,7 +142,7 @@ public class OtpActivity extends AppCompatActivity {
                         Toast.makeText(OtpActivity.this, otpResponse.getMessage(), Toast.LENGTH_SHORT).show();
                         
                         // Navigate to HomeActivity (user is logged in)
-                        Intent intent = new Intent(OtpActivity.this, HomeActivity.class);
+                        Intent intent = new Intent(OtpActivity.this, IntroActivity.class);
                         startActivity(intent);
                         finish();
                     } else {

@@ -109,6 +109,46 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
+                <!-- PDF Upload Card (Hidden when from YouTube option) -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardPDF"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="8dp"
+                    app:cardBackgroundColor="@color/card_background_light"
+                    android:layout_marginBottom="24dp"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Upload PDF Document"
+                            android:textColor="@color/text_primary_light"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="16dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnUploadPDF"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:text="Upload PDF &amp; Generate Notes"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="16dp"
+                            app:backgroundTint="@color/primary_light"
+                            app:icon="@drawable/ic_notes"
+                            app:iconGravity="textStart" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
                 <!-- Recent Videos Section -->
                 <TextView
                     android:layout_width="wrap_content"
@@ -139,4 +179,3 @@
         app:menu="@menu/nav_menu" />
 
 </androidx.drawerlayout.widget.DrawerLayout>
-

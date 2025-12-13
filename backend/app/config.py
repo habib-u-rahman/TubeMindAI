@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     YOUTUBE_API_KEY: str = ""  # Optional: For YouTube Data API v3 (yt-dlp works without it)
     AI_API_KEY: str = "AIzaSyClNOQEM9XEuRCqVX-J6OgRKk9tyZnjSi0"  # Google Gemini API key - Set directly in code for now
     
+    # File Uploads
+    UPLOAD_DIR: str = "uploads"  # Directory for storing uploaded PDFs
+    MAX_FILE_SIZE: int = 50 * 1024 * 1024  # 50MB max file size
+    
     class Config:
         # Load .env file from backend directory (parent of app directory)
         env_file = str(Path(__file__).parent.parent / ".env")

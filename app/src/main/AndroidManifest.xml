@@ -52,6 +52,11 @@
             android:name=".ResetPasswordActivity"
             android:exported="false" />
 
+        <!-- Intro Activity -->
+        <activity
+            android:name=".IntroActivity"
+            android:exported="false" />
+
         <!-- Home Activity -->
         <activity
             android:name=".HomeActivity"
@@ -100,6 +105,31 @@
         <!-- Admin Video Management Activity -->
         <activity
             android:name=".AdminVideoManagementActivity"
+            android:exported="false" />
+
+        <!-- Admin PDF Management Activity -->
+        <activity
+            android:name=".AdminPDFManagementActivity"
+            android:exported="false" />
+
+        <!-- PDF Upload Activity -->
+        <activity
+            android:name=".PDFUploadActivity"
+            android:exported="false" />
+
+        <!-- PDF Notes Activity -->
+        <activity
+            android:name=".PDFNotesActivity"
+            android:exported="false" />
+
+        <!-- PDF Chat Activity -->
+        <activity
+            android:name=".PDFChatActivity"
+            android:exported="false" />
+
+        <!-- PDF History Activity -->
+        <activity
+            android:name=".PDFHistoryActivity"
             android:exported="false" />
     </application>
 
