@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     
     # APIs
     YOUTUBE_API_KEY: str = ""  # Optional: For YouTube Data API v3 (yt-dlp works without it)
-    AI_API_KEY: str = "AIzaSyClNOQEM9XEuRCqVX-J6OgRKk9tyZnjSi0"  # Google Gemini API key - Set directly in code for now
+    AI_API_KEY: str = "AIzaSyD8KpdGE81oSWI39XtJqYB5CF797r3ynj8"  # Google Gemini API key - Set directly in code for now
     
     # File Uploads
     UPLOAD_DIR: str = "uploads"  # Directory for storing uploaded PDFs
