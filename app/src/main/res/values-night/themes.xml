@@ -2,8 +2,8 @@
     <!-- Base application theme for Dark Mode. -->
     <style name="Base.Theme.TubeMindAI" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary Colors -->
-        <item name="colorPrimary">@color/primary_light</item>
-        <item name="colorPrimaryVariant">@color/primary</item>
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_dark</item>
         <item name="colorOnPrimary">@color/white</item>
         
         <!-- Secondary Colors -->
@@ -11,7 +11,7 @@
         <item name="colorOnSecondary">@color/white</item>
         
         <!-- Accent Colors -->
-        <item name="colorTertiary">@color/accent_light</item>
+        <item name="colorTertiary">@color/accent</item>
         <item name="colorOnTertiary">@color/white</item>
         
         <!-- Surface Colors - Modern Dark Theme -->
@@ -23,16 +23,18 @@
         <!-- Status and Navigation Bar -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightStatusBar">false</item>
         
         <!-- Card View -->
         <item name="cardViewStyle">@style/CardViewStyleDark</item>
     </style>
+
+    <style name="Theme.TubeMindAI" parent="Base.Theme.TubeMindAI" />
     
     <!-- Custom CardView Style for Dark Mode -->
     <style name="CardViewStyleDark" parent="CardView">
         <item name="cardCornerRadius">20dp</item>
         <item name="cardElevation">2dp</item>
-        <item name="cardBackgroundColor">@color/card_background_dark</item>
+        <item name="cardBackgroundColor">@color/card_background_light</item>
     </style>
 </resources>

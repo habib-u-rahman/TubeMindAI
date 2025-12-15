@@ -24,6 +24,7 @@ public class SettingsActivity extends AppCompatActivity {
     private SwitchMaterial switchDarkMode, switchNotifications;
     private LinearLayout llEditProfile, llChangePassword;
     private SharedPreferences sharedPreferences;
+    private boolean isInitializing = true;
     private static final String PREFS_NAME = "TubeMindAI_Prefs";
     private static final String KEY_DARK_MODE = "dark_mode";
     private static final String KEY_NOTIFICATIONS = "notifications";
@@ -32,14 +33,8 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // Apply saved dark mode preference before setting content view
+        // Theme is applied globally by TubeMindAIApplication
         sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        boolean isDarkMode = sharedPreferences.getBoolean(KEY_DARK_MODE, false);
-        if (isDarkMode) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-        }
         
         setContentView(R.layout.activity_settings);
 
@@ -89,6 +84,9 @@ public class SettingsActivity extends AppCompatActivity {
         // Load notifications preference
         boolean notificationsEnabled = sharedPreferences.getBoolean(KEY_NOTIFICATIONS, true);
         switchNotifications.setChecked(notificationsEnabled);
+        
+        // Mark initialization as complete
+        isInitializing = false;
     }
 
     private void setupClickListeners() {
@@ -106,6 +104,11 @@ public class SettingsActivity extends AppCompatActivity {
 
         // Dark Mode Toggle
         switchDarkMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            // Prevent listener from firing during initialization
+            if (isInitializing) {
+                return;
+            }
+            
             SharedPreferences.Editor editor = sharedPreferences.edit();
             editor.putBoolean(KEY_DARK_MODE, isChecked);
             editor.apply();
@@ -117,6 +120,9 @@ public class SettingsActivity extends AppCompatActivity {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
                 Toast.makeText(this, "Light mode enabled", Toast.LENGTH_SHORT).show();
             }
+            
+            // Restart activity to apply theme changes immediately
+            recreate();
         });
 
         // Notifications Toggle
